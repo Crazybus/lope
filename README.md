@@ -51,12 +51,18 @@ refresh_interval    768h
 value               world
 ```
 
+```
+$ lope lachlanevenson/k8s-kubectl kubectl get pods
+NAME                    READY     STATUS    RESTARTS   AGE
+nginx-7c87f569d-5zvx4   1/1       Running   0          13s
+```
+
 ## Features
 
 ### Planned
 
 * Add yaml file to define configuration instead of doing a big one liner
-* Automatically add well known locations for secrets for development usage. Add option in yaml file to specify mounted files
+* Add option in yaml file to specify mounted files
 * Add yaml file option to include/exclude environment variables with pattern support
 * Automated ssh agent forwarding for OSX. https://github.com/avsm/docker-ssh-agent-forward
 * Add simple build step options. E.g. alpine as base image with a single `RUN apk add package`. 
@@ -70,3 +76,4 @@ value               world
 * Forward all environment variables into the container
 * Add blacklist to skip certain environment variables
 * Mount secret files and directories into the container (like ~/.vault-token)
+* Automatically add well known locations for secrets for development usage

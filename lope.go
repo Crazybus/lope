@@ -7,12 +7,15 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/user"
+	"path/filepath"
 	"strings"
 )
 
 // https://npf.io/2015/06/testing-exec-command/
 
 func dockerRun(args []string) string {
+	fmt.Printf("Running: docker %v\n", strings.Join(args, " "))
 	cmd := exec.Command("docker", args...)
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -59,15 +62,40 @@ func addEnvVars(run []string) []string {
 	}
 	return run
 }
+func path(p string) string {
+	return filepath.FromSlash(p)
+}
+
+func addVolumes(run []string) []string {
+	usr, _ := user.Current()
+	home := usr.HomeDir + string(os.PathSeparator)
+
+	paths := []string{
+		path(".vault-token"),
+		path(".aws/"),
+		path(".kube/"),
+		path(".ssh/"),
+	}
+
+	for _, p := range paths {
+		absPath := home + p
+		if _, err := os.Stat(absPath); err == nil {
+			volume := fmt.Sprintf("%v:/root/%v", absPath, p)
+			fmt.Printf("Adding volume %q\n", volume)
+			run = append(run, "-v", volume)
+		}
+	}
+	return run
+}
 
 func main() {
 
 	image := buildImage(os.Args[1])
 
 	run := make([]string, 0)
-	run = append(run, "run", "--rm", "-w", "/lope")
+	run = append(run, "run", "--rm", "--entrypoint", "/bin/sh", "-w", "/lope")
 	run = addEnvVars(run)
-	run = append(run, "-v", "/Users/mick/.vault-token:/root/.vault-token")
-	run = append(run, image, "sh", "-c", strings.Join(os.Args[2:], " "))
+	run = addVolumes(run)
+	run = append(run, image, "-c", strings.Join(os.Args[2:], " "))
 	fmt.Println(dockerRun(run))
 }
