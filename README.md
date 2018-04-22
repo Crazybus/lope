@@ -61,6 +61,8 @@ value               world
 * Automated ssh agent forwarding for OSX. https://github.com/avsm/docker-ssh-agent-forward
 * Add simple build step options. E.g. alpine as base image with a single `RUN apk add package`. 
 * Add option to use bind mounts for adding the current working directory. Also allow disabling mounting current directory altogether for use cases like `vault status`
+* Add default .dockerignore for things like .git and .vagrant
+* Automatically expose ports from Dockerfile
 
 ### Done
 
