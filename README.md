@@ -1,5 +1,7 @@
 # Lope
 
+[![Build Status](https://travis-ci.org/Crazybus/lope.svg?branch=master)](https://travis-ci.org/Crazybus/lope)
+
 Abuse docker as a development and testing environment that works (almost) identically across Linux/OSX/Windows. It creates a docker image with your current working directory and forwards environment variables/secrets/ssh agents so that you can run tooling and tests within a docker container with minimal boilerplate. 
 
 # Why
