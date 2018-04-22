@@ -29,7 +29,7 @@ func dockerRun(args []string) string {
 
 func buildImage(image string) string {
 	lopeImage := "lope"
-	file, err := ioutil.TempFile(os.TempDir(), lopeImage)
+	file, err := ioutil.TempFile(path("./"), lopeImage)
 	defer os.Remove(file.Name())
 
 	_, err = file.WriteString(fmt.Sprintf("FROM %v\n ADD . /lope", image))
