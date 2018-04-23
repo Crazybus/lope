@@ -48,11 +48,11 @@ func path(p string) string {
 	return filepath.FromSlash(p)
 }
 
-type Image struct {
+type image struct {
 	params []string
 }
 
-type Config struct {
+type config struct {
 	cmd          []string
 	entrypoint   string
 	envBlacklist []string
@@ -62,13 +62,13 @@ type Config struct {
 	paths        []string
 }
 
-type Lope struct {
-	cfg    *Config
+type lope struct {
+	cfg    *config
 	envs   []string
 	params []string
 }
 
-func (l *Lope) addEnvVars() {
+func (l *lope) addEnvVars() {
 	for _, e := range l.envs {
 		pair := strings.Split(e, "=")
 		blacklisted := false
@@ -92,11 +92,11 @@ func (l *Lope) addEnvVars() {
 	}
 }
 
-func (l *Lope) defaultParams() {
+func (l *lope) defaultParams() {
 	l.params = append(l.params, "run", "--rm", "--entrypoint", l.cfg.entrypoint, "-w", "/lope")
 }
 
-func (l *Lope) addVolumes() {
+func (l *lope) addVolumes() {
 	for _, p := range l.cfg.paths {
 		absPath := l.cfg.home + p
 		if _, err := os.Stat(absPath); err == nil {
@@ -107,11 +107,11 @@ func (l *Lope) addVolumes() {
 	}
 }
 
-func (l *Lope) runParams() {
+func (l *lope) runParams() {
 	l.params = append(l.params, l.cfg.image, "-c", strings.Join(l.cfg.cmd, " "))
 }
 
-func (l *Lope) run() []string {
+func (l *lope) run() []string {
 	l.defaultParams()
 	l.addVolumes()
 	l.addEnvVars()
@@ -126,7 +126,7 @@ func main() {
 	user, _ := user.Current()
 	home := user.HomeDir + string(os.PathSeparator)
 
-	config := &Config{
+	config := &config{
 		cmd:          os.Args[2:],
 		entrypoint:   "/bin/sh",
 		envBlacklist: []string{"HOME"},
@@ -141,7 +141,7 @@ func main() {
 		},
 	}
 
-	lope := Lope{
+	lope := lope{
 		cfg:    config,
 		envs:   os.Environ(),
 		params: make([]string, 0),
