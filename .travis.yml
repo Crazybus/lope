@@ -8,4 +8,5 @@ services:
   - docker
 
 script:
+  - go test -v
   - go run lope.go alpine ls
