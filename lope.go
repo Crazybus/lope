@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -43,59 +44,109 @@ func buildImage(image string) string {
 	return lopeImage
 }
 
-func addEnvVars(run []string) []string {
-	blacklist := []string{"HOME"}
-	for _, e := range os.Environ() {
+func path(p string) string {
+	return filepath.FromSlash(p)
+}
+
+type Image struct {
+	params []string
+}
+
+type Config struct {
+	cmd          []string
+	entrypoint   string
+	envBlacklist []string
+	envPattern   string
+	home         string
+	image        string
+	paths        []string
+}
+
+type Lope struct {
+	cfg    *Config
+	envs   []string
+	params []string
+}
+
+func (l *Lope) addEnvVars() {
+	for _, e := range l.envs {
 		pair := strings.Split(e, "=")
 		blacklisted := false
-		for _, b := range blacklist {
+		for _, b := range l.cfg.envBlacklist {
 			if pair[0] == b {
 				blacklisted = true
 				break
 			}
 		}
+		if l.cfg.envPattern != "" {
+			matched, _ := regexp.MatchString(l.cfg.envPattern, e)
+
+			if !matched {
+				blacklisted = true
+			}
+		}
+
 		if !blacklisted {
-			run = append(run, "-e", e)
-		} else {
-			fmt.Println("Not adding environment variable:", e)
+			l.params = append(l.params, "-e", e)
 		}
 	}
-	return run
-}
-func path(p string) string {
-	return filepath.FromSlash(p)
 }
 
-func addVolumes(run []string) []string {
-	usr, _ := user.Current()
-	home := usr.HomeDir + string(os.PathSeparator)
+func (l *Lope) defaultParams() {
+	l.params = append(l.params, "run", "--rm", "--entrypoint", l.cfg.entrypoint, "-w", "/lope")
+}
 
-	paths := []string{
-		path(".vault-token"),
-		path(".aws/"),
-		path(".kube/"),
-		path(".ssh/"),
-	}
-
-	for _, p := range paths {
-		absPath := home + p
+func (l *Lope) addVolumes() {
+	for _, p := range l.cfg.paths {
+		absPath := l.cfg.home + p
 		if _, err := os.Stat(absPath); err == nil {
 			volume := fmt.Sprintf("%v:/root/%v", absPath, p)
 			fmt.Printf("Adding volume %q\n", volume)
-			run = append(run, "-v", volume)
+			l.params = append(l.params, "-v", volume)
 		}
 	}
-	return run
+}
+
+func (l *Lope) runParams() {
+	l.params = append(l.params, l.cfg.image, "-c", strings.Join(l.cfg.cmd, " "))
+}
+
+func (l *Lope) run() []string {
+	l.defaultParams()
+	l.addVolumes()
+	l.addEnvVars()
+	l.runParams()
+	return l.params
 }
 
 func main() {
 
 	image := buildImage(os.Args[1])
 
-	run := make([]string, 0)
-	run = append(run, "run", "--rm", "--entrypoint", "/bin/sh", "-w", "/lope")
-	run = addEnvVars(run)
-	run = addVolumes(run)
-	run = append(run, image, "-c", strings.Join(os.Args[2:], " "))
-	fmt.Println(dockerRun(run))
+	user, _ := user.Current()
+	home := user.HomeDir + string(os.PathSeparator)
+
+	config := &Config{
+		cmd:          os.Args[2:],
+		entrypoint:   "/bin/sh",
+		envBlacklist: []string{"HOME"},
+		envPattern:   "VAULT|AWS|GOOGLE_|GITHUB",
+		home:         home,
+		image:        image,
+		paths: []string{
+			path(".vault-token"),
+			path(".aws/"),
+			path(".kube/"),
+			path(".ssh/"),
+		},
+	}
+
+	lope := Lope{
+		cfg:    config,
+		envs:   os.Environ(),
+		params: make([]string, 0),
+	}
+
+	params := lope.run()
+	fmt.Println(dockerRun(params))
 }
