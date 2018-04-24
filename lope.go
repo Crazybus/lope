@@ -53,8 +53,8 @@ type image struct {
 type config struct {
 	cmd          []string
 	entrypoint   string
-	envBlacklist []string
-	envPattern   string
+	blacklist    []string
+	whitelist    []string
 	home         string
 	image        string
 	sourceImage  string
@@ -77,22 +77,27 @@ func (l *lope) createDockerfile() {
 func (l *lope) addEnvVars() {
 	for _, e := range l.envs {
 		pair := strings.Split(e, "=")
+		name := pair[0]
+		add := true
 		blacklisted := false
-		for _, b := range l.cfg.envBlacklist {
-			if pair[0] == b {
+		for _, b := range l.cfg.blacklist {
+			matched, _ := regexp.MatchString(b, name)
+			if matched {
 				blacklisted = true
 				break
 			}
 		}
-		if l.cfg.envPattern != "" {
-			matched, _ := regexp.MatchString(l.cfg.envPattern, e)
-
-			if !matched {
-				blacklisted = true
+		if len(l.cfg.whitelist) > 0 {
+			add = false
+		}
+		for _, w := range l.cfg.whitelist {
+			matched, _ := regexp.MatchString(w, name)
+			if matched {
+				add = true
+				break
 			}
 		}
-
-		if !blacklisted {
+		if add && !blacklisted {
 			l.params = append(l.params, "-e", e)
 		}
 	}
@@ -134,8 +139,8 @@ func main() {
 	config := &config{
 		cmd:          os.Args[2:],
 		entrypoint:   "/bin/sh",
-		envBlacklist: []string{"HOME"},
-		envPattern:   "VAULT|AWS|GOOGLE|GITHUB",
+		blacklist:    []string{"HOME"},
+		whitelist:    []string{"VAULT", "AWS", "GOOGLE", "GITHUB"},
 		home:         home,
 		sourceImage:  os.Args[1],
 		image:        "lope",

@@ -78,7 +78,7 @@ nginx-7c87f569d-5zvx4   1/1       Running   0          13s
 
 * Run a docker container with current directory added
 * Forward all environment variables into the container
-* Add blacklist to skip certain environment variables
+* Add blacklist and whitelist regexes to filter environment variables
 * Mount secret files and directories into the container (like ~/.vault-token)
 * Automatically add well known locations for secrets for development usage
 * Add simple build step options. E.g. alpine as base image with a single `RUN apk add package`. 
