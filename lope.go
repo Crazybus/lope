@@ -28,20 +28,18 @@ func dockerRun(args []string) string {
 	return out.String()
 }
 
-func buildImage(image string) string {
-	lopeImage := "lope"
-	file, err := ioutil.TempFile(path("./"), lopeImage)
+func buildImage(image string, dockerfile string) {
+	file, err := ioutil.TempFile(path("./"), image)
 	defer os.Remove(file.Name())
 
-	_, err = file.WriteString(fmt.Sprintf("FROM %v\n ADD . /lope", image))
+	_, err = file.WriteString(dockerfile)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	build := make([]string, 0)
-	build = append(build, "build", "-t", lopeImage, "-f", file.Name(), ".")
+	build = append(build, "build", "-t", image, "-f", file.Name(), ".")
 	fmt.Println(dockerRun(build))
-	return lopeImage
 }
 
 func path(p string) string {
@@ -59,13 +57,21 @@ type config struct {
 	envPattern   string
 	home         string
 	image        string
+	sourceImage  string
+	instructions []string
 	paths        []string
 }
 
 type lope struct {
-	cfg    *config
-	envs   []string
-	params []string
+	cfg        *config
+	dockerfile string
+	envs       []string
+	params     []string
+}
+
+func (l *lope) createDockerfile() {
+	l.dockerfile = fmt.Sprintf("FROM %v\nADD . /lope\n", l.cfg.sourceImage)
+	l.dockerfile = l.dockerfile + strings.Join(l.cfg.instructions, "\n")
 }
 
 func (l *lope) addEnvVars() {
@@ -112,6 +118,7 @@ func (l *lope) runParams() {
 }
 
 func (l *lope) run() []string {
+	l.createDockerfile()
 	l.defaultParams()
 	l.addVolumes()
 	l.addEnvVars()
@@ -121,8 +128,6 @@ func (l *lope) run() []string {
 
 func main() {
 
-	image := buildImage(os.Args[1])
-
 	user, _ := user.Current()
 	home := user.HomeDir + string(os.PathSeparator)
 
@@ -130,9 +135,11 @@ func main() {
 		cmd:          os.Args[2:],
 		entrypoint:   "/bin/sh",
 		envBlacklist: []string{"HOME"},
-		envPattern:   "VAULT|AWS|GOOGLE_|GITHUB",
+		envPattern:   "VAULT|AWS|GOOGLE|GITHUB",
 		home:         home,
-		image:        image,
+		sourceImage:  os.Args[1],
+		image:        "lope",
+		instructions: []string{"RUN echo hellope > /lope/hellope"},
 		paths: []string{
 			path(".vault-token"),
 			path(".aws/"),
@@ -148,5 +155,6 @@ func main() {
 	}
 
 	params := lope.run()
+	buildImage(lope.cfg.image, lope.dockerfile)
 	fmt.Println(dockerRun(params))
 }
