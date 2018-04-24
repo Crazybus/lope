@@ -30,6 +30,7 @@ env:
 * Docker is the only dependency needed for developing/testing/deploying
 * Defaults which favor usability over speed and security while still having configuration options available to restrict which environment variables/secrets are forwarded into containers for proper usage. 
 * All actions are immutable. All files and dependencies are added to a docker image before running. This means no local state is modified and the state inside the container is static during its lifetime. This makes it possible to run something like `ansible-playbook` and then immediately switch to a different branch and continue to make changes.
+* Testing and tooling should be run the same in development and CI environments
 
 ## Examples
 
@@ -71,6 +72,8 @@ nginx-7c87f569d-5zvx4   1/1       Running   0          13s
 * Add option to use bind mounts for adding the current working directory. Also allow disabling mounting current directory altogether for use cases like `vault status`
 * Add default .dockerignore for things like .git and .vagrant
 * Automatically expose ports from Dockerfile
+* Allow running multiple images/commands combos with stages
+* Allow sharing artifacts/files between stages
 
 ### Done
 
