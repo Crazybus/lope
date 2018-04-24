@@ -9,8 +9,8 @@ import (
 var c = &config{
 	cmd:          []string{"ls", "-lhatr"},
 	entrypoint:   "/bin/sh",
-	envBlacklist: []string{"HOME"},
-	envPattern:   "VAULT|AWS|GOOGLE|GITHUB",
+	blacklist:    []string{""},
+	whitelist:    []string{""},
 	home:         "/home/lope",
 	image:        "lopeImage",
 	instructions: []string{""},
@@ -122,42 +122,42 @@ func TestAddEnvVars(t *testing.T) {
 		description string
 		envs        []string
 		blacklist   []string
-		pattern     string
+		whitelist   []string
 		want        string
 	}{
 		{
 			"Add an env var",
 			[]string{"ENV1=hello1"},
-			[]string{""},
-			"",
+			[]string{},
+			[]string{},
 			"-e ENV1=hello1",
 		},
 		{
-			"Add an multiple env vars",
+			"Add multiple env vars",
 			[]string{"ENV1=hello1", "ENV2=hello2"},
-			[]string{""},
-			"",
+			[]string{},
+			[]string{},
 			"-e ENV1=hello1 -e ENV2=hello2",
 		},
 		{
 			"Blacklist an env var",
 			[]string{"ENV1=hello1"},
 			[]string{"ENV1"},
-			"",
+			[]string{},
 			"",
 		},
 		{
 			"Whitelist an env var",
 			[]string{"ENV1=hello1", "ENV2=hello2", "NO=no"},
-			[]string{""},
-			"ENV",
+			[]string{},
+			[]string{"ENV"},
 			"-e ENV1=hello1 -e ENV2=hello2",
 		},
 		{
 			"Blacklist and whitelisting env vars",
 			[]string{"ENV1=hello1", "ENV2=hello2", "NO=no"},
 			[]string{"ENV1"},
-			"ENV",
+			[]string{"ENV"},
 			"-e ENV2=hello2",
 		},
 	}
@@ -166,8 +166,8 @@ func TestAddEnvVars(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			l.params = make([]string, 0)
 			l.envs = test.envs
-			l.cfg.envBlacklist = test.blacklist
-			l.cfg.envPattern = test.pattern
+			l.cfg.blacklist = test.blacklist
+			l.cfg.whitelist = test.whitelist
 			l.addEnvVars()
 
 			got := strings.Join(l.params, " ")
