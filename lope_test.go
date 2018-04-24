@@ -10,9 +10,10 @@ var c = &config{
 	cmd:          []string{"ls", "-lhatr"},
 	entrypoint:   "/bin/sh",
 	envBlacklist: []string{"HOME"},
-	envPattern:   "VAULT|AWS|GOOGLE_|GITHUB",
+	envPattern:   "VAULT|AWS|GOOGLE|GITHUB",
 	home:         "/home/lope",
 	image:        "lopeImage",
+	instructions: []string{""},
 	paths: []string{
 		path(".vault-token"),
 		path(".aws/"),
@@ -22,7 +23,8 @@ var c = &config{
 }
 
 var l = lope{
-	cfg: c,
+	cfg:        c,
+	dockerfile: "imageName",
 	envs: []string{
 		"VAULT_ADDR=http://localhost:8200",
 		"VAULT_TOKEN=123456",
@@ -200,6 +202,56 @@ func TestDefaultParams(t *testing.T) {
 
 			got := strings.Join(l.params, " ")
 			want := test.want
+
+			if got != want {
+				t.Errorf("got %q want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestCreateDockerfile(t *testing.T) {
+
+	var tests = []struct {
+		description  string
+		image        string
+		instructions []string
+		want         []string
+	}{
+		{
+			"Create a basic dockerfile",
+			"imageName",
+			[]string{""},
+			[]string{
+				"FROM imageName",
+				"ADD . /lope",
+				"",
+			},
+		},
+		{
+			"Create a dockerfile with extra instructions",
+			"imageName",
+			[]string{
+				"RUN echo hello",
+				"RUN hello world",
+			},
+			[]string{
+				"FROM imageName",
+				"ADD . /lope",
+				"RUN echo hello",
+				"RUN hello world",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			l.cfg.sourceImage = test.image
+			l.cfg.instructions = test.instructions
+			l.createDockerfile()
+
+			got := l.dockerfile
+			want := strings.Join(test.want, "\n")
 
 			if got != want {
 				t.Errorf("got %q want %q", got, want)

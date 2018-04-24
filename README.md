@@ -68,7 +68,6 @@ nginx-7c87f569d-5zvx4   1/1       Running   0          13s
 * Add option in yaml file to specify mounted files
 * Add yaml file option to include/exclude environment variables with pattern support
 * Automated ssh agent forwarding for OSX. https://github.com/avsm/docker-ssh-agent-forward
-* Add simple build step options. E.g. alpine as base image with a single `RUN apk add package`. 
 * Add option to use bind mounts for adding the current working directory. Also allow disabling mounting current directory altogether for use cases like `vault status`
 * Add default .dockerignore for things like .git and .vagrant
 * Automatically expose ports from Dockerfile
@@ -82,3 +81,4 @@ nginx-7c87f569d-5zvx4   1/1       Running   0          13s
 * Add blacklist to skip certain environment variables
 * Mount secret files and directories into the container (like ~/.vault-token)
 * Automatically add well known locations for secrets for development usage
+* Add simple build step options. E.g. alpine as base image with a single `RUN apk add package`. 
