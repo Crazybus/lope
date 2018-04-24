@@ -77,24 +77,48 @@ func TestAddVolumes(t *testing.T) {
 		description string
 		paths       []string
 		home        string
+		mount       bool
+		dir         string
 		want        string
 	}{
 		{
 			"Add the aws directory",
 			[]string{".aws"},
 			path("./test/"),
+			false,
+			"",
 			fmt.Sprintf("-v %v.aws:/root/.aws", path("./test/")),
 		},
 		{
 			"Don't add any directories if they don't exist",
 			[]string{".aws", ".not-exist"},
 			path("./test/"),
+			false,
+			"",
 			fmt.Sprintf("-v %v.aws:/root/.aws", path("./test/")),
+		},
+		{
+			"Don't add any directories if none are defined",
+			[]string{},
+			path("./test/"),
+			false,
+			"",
+			"",
+		},
+		{
+			"Mount the specified directory if -mount is set",
+			[]string{},
+			path("./test/"),
+			true,
+			"/home/user/pro/lope/",
+			"-v /home/user/pro/lope/:/lope/",
 		},
 		{
 			"Add multiple directories",
 			[]string{".aws", ".kube"},
 			path("./test/"),
+			false,
+			"",
 			fmt.Sprintf("-v %v.aws:/root/.aws -v %v.kube:/root/.kube", path("./test/"), path("./test/")),
 		},
 	}
@@ -104,6 +128,8 @@ func TestAddVolumes(t *testing.T) {
 			l.params = make([]string, 0)
 			l.cfg.home = test.home
 			l.cfg.paths = test.paths
+			l.cfg.mount = test.mount
+			l.cfg.dir = test.dir
 			l.addVolumes()
 
 			got := strings.Join(l.params, " ")
@@ -215,12 +241,16 @@ func TestCreateDockerfile(t *testing.T) {
 	var tests = []struct {
 		description  string
 		image        string
+		mount        bool
+		noMount      bool
 		instructions []string
 		want         []string
 	}{
 		{
 			"Create a basic dockerfile",
 			"imageName",
+			false,
+			false,
 			[]string{""},
 			[]string{
 				"FROM imageName",
@@ -229,8 +259,32 @@ func TestCreateDockerfile(t *testing.T) {
 			},
 		},
 		{
+			"Dont ADD the files if mount is set",
+			"imageName",
+			true,
+			false,
+			[]string{""},
+			[]string{
+				"FROM imageName",
+				"",
+			},
+		},
+		{
+			"Dont ADD the files if noMount is set",
+			"imageName",
+			false,
+			true,
+			[]string{""},
+			[]string{
+				"FROM imageName",
+				"",
+			},
+		},
+		{
 			"Create a dockerfile with extra instructions",
 			"imageName",
+			false,
+			false,
 			[]string{
 				"RUN echo hello",
 				"RUN hello world",
@@ -248,6 +302,8 @@ func TestCreateDockerfile(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			l.cfg.sourceImage = test.image
 			l.cfg.instructions = test.instructions
+			l.cfg.mount = test.mount
+			l.cfg.noMount = test.noMount
 			l.createDockerfile()
 
 			got := l.dockerfile

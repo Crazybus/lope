@@ -52,11 +52,14 @@ type image struct {
 
 type config struct {
 	cmd          []string
+	dir          string
 	entrypoint   string
 	blacklist    []string
 	whitelist    []string
 	home         string
 	image        string
+	mount        bool
+	noMount      bool
 	sourceImage  string
 	instructions []string
 	paths        []string
@@ -70,8 +73,17 @@ type lope struct {
 }
 
 func (l *lope) createDockerfile() {
-	l.dockerfile = fmt.Sprintf("FROM %v\nADD . /lope\n", l.cfg.sourceImage)
-	l.dockerfile = l.dockerfile + strings.Join(l.cfg.instructions, "\n")
+	d := make([]string, 0)
+
+	d = append(d, fmt.Sprintf("FROM %v", l.cfg.sourceImage))
+
+	if !l.cfg.mount && !l.cfg.noMount {
+		d = append(d, "ADD . /lope")
+	}
+
+	d = append(d, l.cfg.instructions...)
+
+	l.dockerfile = strings.Join(d, "\n")
 }
 
 func (l *lope) addEnvVars() {
@@ -116,6 +128,10 @@ func (l *lope) addVolumes() {
 			l.params = append(l.params, "-v", volume)
 		}
 	}
+	if l.cfg.mount {
+		path := fmt.Sprintf("%v:/lope/", l.cfg.dir)
+		l.params = append(l.params, "-v", path)
+	}
 }
 
 func (l *lope) runParams() {
@@ -136,21 +152,26 @@ func main() {
 	user, _ := user.Current()
 	home := user.HomeDir + string(os.PathSeparator)
 
+	pwd, _ := os.Getwd()
+
 	config := &config{
-		cmd:          os.Args[2:],
-		entrypoint:   "/bin/sh",
 		blacklist:    []string{"HOME"},
-		whitelist:    []string{"VAULT", "AWS", "GOOGLE", "GITHUB"},
+		cmd:          os.Args[2:],
+		dir:          pwd,
+		entrypoint:   "/bin/sh",
 		home:         home,
-		sourceImage:  os.Args[1],
 		image:        "lope",
-		instructions: []string{"RUN echo hellope > /lope/hellope"},
+		instructions: []string{"RUN mkdir -p /lope && echo hellope > /lope/hellope"},
+		mount:        false,
+		noMount:      false,
 		paths: []string{
 			path(".vault-token"),
 			path(".aws/"),
 			path(".kube/"),
 			path(".ssh/"),
 		},
+		sourceImage: os.Args[1],
+		whitelist:   []string{"VAULT", "AWS", "GOOGLE", "GITHUB"},
 	}
 
 	lope := lope{
