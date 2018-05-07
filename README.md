@@ -17,7 +17,7 @@ With lope:
 lope hashicorp/terraform:${TERRAFORM_VERSION} terraform plan
 ```
 
-With `.lope.yml` file:
+With `.lope.yml` file (not yet implemented):
 ```
 image: hashicorp/terraform:${TERRAFORM_VERSION}
 command: terraform plan
@@ -34,16 +34,18 @@ env:
 
 ## Examples
 
-Usage: `lope image commands go here`
+Usage: `lope -flags image commands go here`
+
+Run `lope -help` for all command line flags.
 
 ```
-$ lope alpine 'ls'
+$ lope alpine ls
 README.md
 lope
 lope.go
 ```
 ```
-$ lope alpine 'cat /etc/issue'
+$ lope alpine cat /etc/issue
 Welcome to Alpine Linux 3.7 Kernel \r on an \m (\l)
 ```
 ```
@@ -58,6 +60,12 @@ value               world
 $ lope lachlanevenson/k8s-kubectl kubectl get pods
 NAME                    READY     STATUS    RESTARTS   AGE
 nginx-7c87f569d-5zvx4   1/1       Running   0          13s
+```
+
+```
+$ lope docker docker ps
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS                  PORTS               NAMES
+b4b7bf56655b        lope                "/bin/sh -c 'docker …"   1 second ago        Up Less than a second                       elegant_lalande
 ```
 
 ## Features
@@ -82,3 +90,5 @@ nginx-7c87f569d-5zvx4   1/1       Running   0          13s
 * Automatically add well known locations for secrets for development usage
 * Add simple build step options. E.g. alpine as base image with a single `RUN apk add package`. 
 * Add option to use bind mounts for adding the current working directory. Also allow disabling mounting current directory altogether for use cases like `vault status`
+* Add command line flags
+* Mount the docker socket into the container

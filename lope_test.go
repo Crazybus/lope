@@ -8,6 +8,7 @@ import (
 
 var c = &config{
 	cmd:          []string{"ls", "-lhatr"},
+	dockerSocket: "/var/run/docker.sock",
 	entrypoint:   "/bin/sh",
 	blacklist:    []string{""},
 	whitelist:    []string{""},
@@ -78,6 +79,7 @@ func TestAddVolumes(t *testing.T) {
 		paths       []string
 		home        string
 		mount       bool
+		docker      bool
 		dir         string
 		want        string
 	}{
@@ -85,6 +87,7 @@ func TestAddVolumes(t *testing.T) {
 			"Add the aws directory",
 			[]string{".aws"},
 			path("./test/"),
+			false,
 			false,
 			"",
 			fmt.Sprintf("-v %v.aws:/root/.aws", path("./test/")),
@@ -94,6 +97,7 @@ func TestAddVolumes(t *testing.T) {
 			[]string{".aws", ".not-exist"},
 			path("./test/"),
 			false,
+			false,
 			"",
 			fmt.Sprintf("-v %v.aws:/root/.aws", path("./test/")),
 		},
@@ -101,6 +105,7 @@ func TestAddVolumes(t *testing.T) {
 			"Don't add any directories if none are defined",
 			[]string{},
 			path("./test/"),
+			false,
 			false,
 			"",
 			"",
@@ -110,6 +115,7 @@ func TestAddVolumes(t *testing.T) {
 			[]string{},
 			path("./test/"),
 			true,
+			false,
 			"/home/user/pro/lope/",
 			"-v /home/user/pro/lope/:/lope/",
 		},
@@ -118,8 +124,18 @@ func TestAddVolumes(t *testing.T) {
 			[]string{".aws", ".kube"},
 			path("./test/"),
 			false,
+			false,
 			"",
 			fmt.Sprintf("-v %v.aws:/root/.aws -v %v.kube:/root/.kube", path("./test/"), path("./test/")),
+		},
+		{
+			"Mount the docker socket",
+			[]string{},
+			path("./test/"),
+			false,
+			true,
+			"",
+			"-v /var/run/docker.sock:/var/run/docker.sock",
 		},
 	}
 
@@ -130,6 +146,7 @@ func TestAddVolumes(t *testing.T) {
 			l.cfg.paths = test.paths
 			l.cfg.mount = test.mount
 			l.cfg.dir = test.dir
+			l.cfg.docker = test.docker
 			l.addVolumes()
 
 			got := strings.Join(l.params, " ")
