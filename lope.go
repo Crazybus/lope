@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -51,6 +52,8 @@ type image struct {
 type config struct {
 	cmd          []string
 	dir          string
+	docker       bool
+	dockerSocket string
 	entrypoint   string
 	blacklist    []string
 	whitelist    []string
@@ -130,6 +133,9 @@ func (l *lope) addVolumes() {
 		path := fmt.Sprintf("%v:/lope/", l.cfg.dir)
 		l.params = append(l.params, "-v", path)
 	}
+	if l.cfg.docker {
+		l.params = append(l.params, "-v", l.cfg.dockerSocket+":/var/run/docker.sock")
+	}
 }
 
 func (l *lope) runParams() {
@@ -151,6 +157,20 @@ func (l *lope) run() []string {
 	return l.params
 }
 
+type flagArray []string
+
+func (i *flagArray) String() string {
+	return "my string representation"
+}
+
+func (i *flagArray) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
+var instructions flagArray
+var mountPaths flagArray
+
 func main() {
 
 	user, _ := user.Current()
@@ -158,24 +178,62 @@ func main() {
 
 	pwd, _ := os.Getwd()
 
-	config := &config{
-		blacklist:    []string{"HOME"},
-		cmd:          os.Args[2:],
-		dir:          pwd,
-		entrypoint:   "/bin/sh",
-		home:         home,
-		image:        "lope",
-		instructions: []string{},
-		mount:        true,
-		noMount:      false,
-		paths: []string{
+	var blacklist string
+	flag.StringVar(&blacklist, "blacklist", "HOME", "Comma seperated list of environment variables that will be ignored by lope")
+
+	var whitelist string
+	flag.StringVar(&whitelist, "whitelist", "", "Comma seperated list of environment variables that will be be included by lope")
+
+	dir := flag.String("dir", pwd, "The directory that will be mounted into the container. Defaut is current working directory")
+
+	entrypoint := flag.String("entrypoint", "/bin/sh", "The entrypoint for running the lope command")
+
+	flag.Var(&instructions, "instruction", "Extra docker image instructions to run when building the image. Can be specified multiple times")
+
+	flag.Var(&mountPaths, "path", "Paths that will be mounted from the users home directory into lope. Path will be ignored if it isn't accessible. Can be specified multiple times")
+
+	noMount := flag.Bool("noMount", false, "Disable mounting the current working directory into the image")
+
+	addMount := flag.Bool("addMount", false, "Setting this will add the directory into the image instead of mounting it")
+
+	docker := flag.Bool("docker", true, "Mount the docker socket inside the container")
+
+	dockerSocket := flag.String("dockerSocket", "/var/run/docker.sock", "Path to the docker socket")
+
+	flag.Parse()
+	args := flag.Args()
+
+	mount := *addMount && *noMount
+
+	paths := []string{}
+	if len(mountPaths) == 0 {
+		paths = []string{
 			path(".vault-token"),
 			path(".aws/"),
 			path(".kube/"),
 			path(".ssh/"),
-		},
-		sourceImage: os.Args[1],
-		whitelist:   []string{},
+		}
+	} else {
+		for _, p := range mountPaths {
+			paths = append(paths, path(p))
+		}
+	}
+
+	config := &config{
+		blacklist:    strings.Split(blacklist, ","),
+		cmd:          args[1:],
+		dir:          *dir,
+		docker:       *docker,
+		dockerSocket: *dockerSocket,
+		entrypoint:   *entrypoint,
+		home:         home,
+		image:        "lope",
+		instructions: instructions,
+		mount:        mount,
+		noMount:      *noMount,
+		paths:        paths,
+		sourceImage:  args[0],
+		whitelist:    strings.Split(whitelist, ","),
 	}
 
 	lope := lope{
