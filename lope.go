@@ -13,10 +13,8 @@ import (
 	"strings"
 )
 
-// https://npf.io/2015/06/testing-exec-command/
-
 func dockerRun(args []string) string {
-	fmt.Printf("Running: docker %v\n", strings.Join(args, " "))
+	debug(fmt.Sprintf("Running: docker %v\n", strings.Join(args, " ")))
 	cmd := exec.Command("docker", args...)
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -39,7 +37,7 @@ func buildImage(image string, dockerfile string) {
 
 	build := make([]string, 0)
 	build = append(build, "build", "-t", image, "-f", file.Name(), ".")
-	fmt.Println(dockerRun(build))
+	debug(fmt.Sprintf(dockerRun(build)))
 }
 
 func path(p string) string {
@@ -124,7 +122,7 @@ func (l *lope) addVolumes() {
 		absPath := l.cfg.home + p
 		if _, err := os.Stat(absPath); err == nil {
 			volume := fmt.Sprintf("%v:/root/%v", absPath, p)
-			fmt.Printf("Adding volume %q\n", volume)
+			debug(fmt.Sprintf("Adding volume %q\n", volume))
 			l.params = append(l.params, "-v", volume)
 		}
 	}
@@ -136,6 +134,12 @@ func (l *lope) addVolumes() {
 
 func (l *lope) runParams() {
 	l.params = append(l.params, l.cfg.image, "-c", strings.Join(l.cfg.cmd, " "))
+}
+
+func debug(message string) {
+	if _, ok := os.LookupEnv("DEBUG"); ok {
+		fmt.Println("DEBUG: ", message)
+	}
 }
 
 func (l *lope) run() []string {
@@ -161,8 +165,8 @@ func main() {
 		entrypoint:   "/bin/sh",
 		home:         home,
 		image:        "lope",
-		instructions: []string{"RUN mkdir -p /lope && echo hellope > /lope/hellope"},
-		mount:        false,
+		instructions: []string{},
+		mount:        true,
 		noMount:      false,
 		paths: []string{
 			path(".vault-token"),
@@ -171,7 +175,7 @@ func main() {
 			path(".ssh/"),
 		},
 		sourceImage: os.Args[1],
-		whitelist:   []string{"VAULT", "AWS", "GOOGLE", "GITHUB"},
+		whitelist:   []string{},
 	}
 
 	lope := lope{
@@ -182,5 +186,5 @@ func main() {
 
 	params := lope.run()
 	buildImage(lope.cfg.image, lope.dockerfile)
-	fmt.Println(dockerRun(params))
+	fmt.Printf(dockerRun(params))
 }
