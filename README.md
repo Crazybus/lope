@@ -72,14 +72,14 @@ b4b7bf56655b        lope                "/bin/sh -c 'docker …"   1 second ago 
 
 ### Planned
 
+* Automatically expose ports from Dockerfile
+* Automated ssh agent forwarding for OSX. https://github.com/avsm/docker-ssh-agent-forward
 * Add yaml file to define configuration instead of doing a big one liner
 * Add option in yaml file to specify mounted files
 * Add yaml file option to include/exclude environment variables with pattern support
-* Automated ssh agent forwarding for OSX. https://github.com/avsm/docker-ssh-agent-forward
-* Add default .dockerignore for things like .git and .vagrant
-* Automatically expose ports from Dockerfile
 * Allow running multiple images/commands combos with stages
 * Allow sharing artifacts/files between stages
+* Add default .dockerignore for things like .git and .vagrant
 
 ### Done
 
