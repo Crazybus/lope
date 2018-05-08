@@ -13,7 +13,19 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 )
+
+func runBackground(args []string) error {
+	debug(fmt.Sprintf("Starting: %v\n", strings.Join(args, " ")))
+	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Stdout = os.Stdout
+	err := cmd.Start()
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 func run(args []string) (string, error) {
 	debug(fmt.Sprintf("Running: %v\n", strings.Join(args, " ")))
@@ -174,11 +186,14 @@ func (l *lope) sshForward() {
 	name := "lope-sshd"
 	volume := "lope-ssh-agent"
 	port := "2244"
+	host := "127.0.0.1"
 
+	// Create a volume to mount our ssh-agent into
 	r := make([]string, 0)
 	r = append(r, "docker", "volume", "create", "--name", volume)
 	run(r)
 
+	// Start the ssh server where we will forward our agent to
 	p := make([]string, 0)
 	p = append(
 		p,
@@ -192,6 +207,50 @@ func (l *lope) sshForward() {
 		image,
 	)
 	run(p)
+
+	// Wait for the ssh server to be responding
+	w := make([]string, 0)
+	w = append(
+		w,
+		"ssh",
+		"-A",
+		"-o", "StrictHostKeyChecking=no",
+		"-o", "GlobalKnownHostsFile=/dev/null",
+		"-o", "UserKnownHostsFile=/dev/null",
+		"-p", port,
+		"root@"+host,
+		"ls",
+	)
+
+	for i := 1; i <= 10; i++ {
+		_, err := run(w)
+		if err != nil {
+			time.Sleep(3 * time.Second)
+		} else {
+			break
+		}
+	}
+
+	// Forward ssh agent into the container
+	s := make([]string, 0)
+	s = append(
+		s,
+		"ssh",
+		"-A",
+		"-f",
+		"-o", "StrictHostKeyChecking=no",
+		"-o", "GlobalKnownHostsFile=/dev/null",
+		"-o", "UserKnownHostsFile=/dev/null",
+		"-p", port,
+		"-S", "none",
+		"root@"+host,
+		"/ssh-entrypoint.sh",
+	)
+
+	err := runBackground(s)
+	if err != nil {
+		fmt.Print("Failed to forward SSH agent", err)
+	}
 }
 
 func debug(message string) {
@@ -301,11 +360,11 @@ func main() {
 	params := lope.run()
 
 	if lope.cfg.image != lope.cfg.sourceImage {
-	    out, err := buildImage(lope.cfg.image, lope.dockerfile)
-	    if err != nil {
-            fmt.Println(out)
-	    	os.Exit(1)
-	    }
+		out, err := buildImage(lope.cfg.image, lope.dockerfile)
+		if err != nil {
+			fmt.Println(out)
+			os.Exit(1)
+		}
 	}
 
 	out, err := run(params)
