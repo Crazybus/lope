@@ -9,4 +9,4 @@ services:
 
 script:
   - go test -v
-  - go run lope.go alpine ls
+  - go run lope.go -noSSH alpine ls
