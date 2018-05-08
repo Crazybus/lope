@@ -14,9 +14,9 @@ import (
 	"strings"
 )
 
-func dockerRun(args []string) string {
-	debug(fmt.Sprintf("Running: docker %v\n", strings.Join(args, " ")))
-	cmd := exec.Command("docker", args...)
+func run(args []string) string {
+	debug(fmt.Sprintf("Running: %v\n", strings.Join(args, " ")))
+	cmd := exec.Command(args[0], args[1:]...)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out
@@ -37,8 +37,8 @@ func buildImage(image string, dockerfile string) {
 	}
 
 	build := make([]string, 0)
-	build = append(build, "build", "-t", image, "-f", file.Name(), ".")
-	debug(fmt.Sprintf(dockerRun(build)))
+	build = append(build, "docker", "build", "-t", image, "-f", file.Name(), ".")
+	debug(fmt.Sprintf(run(build)))
 }
 
 func path(p string) string {
@@ -122,7 +122,7 @@ func (l *lope) addEnvVars() {
 }
 
 func (l *lope) defaultParams() {
-	l.params = append(l.params, "run", "--rm", "--entrypoint", l.cfg.entrypoint, "-w", "/lope")
+	l.params = append(l.params, "docker", "run", "--rm", "--entrypoint", l.cfg.entrypoint, "-w", "/lope")
 }
 
 func (l *lope) addVolumes() {
@@ -253,5 +253,5 @@ func main() {
 		buildImage(lope.cfg.image, lope.dockerfile)
 	}
 
-	fmt.Printf(dockerRun(params))
+	fmt.Printf(run(params))
 }

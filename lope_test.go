@@ -231,9 +231,9 @@ func TestDefaultParams(t *testing.T) {
 		want        string
 	}{
 		{
-			"Override the entrypoing",
+			"Override the entrypoint",
 			"/bin/ohyeah",
-			"run --rm --entrypoint /bin/ohyeah -w /lope",
+			"docker run --rm --entrypoint /bin/ohyeah -w /lope",
 		},
 	}
 
