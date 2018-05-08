@@ -87,7 +87,6 @@ Hi Crazybus! You've successfully authenticated, but GitHub does not provide shel
 * Add yaml file to define configuration instead of doing a big one liner
 * Add option in yaml file to specify mounted files
 * Add yaml file option to include/exclude environment variables with pattern support
-* Add default .dockerignore for things like .git and .vagrant
 * Allow running multiple images/commands combos with stages
 * Allow sharing artifacts/files between stages
 * Add default .dockerignore for things like .git and .vagrant
