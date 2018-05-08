@@ -44,10 +44,13 @@ README.md
 lope
 lope.go
 ```
+
 ```
 $ lope alpine cat /etc/issue
 Welcome to Alpine Linux 3.7 Kernel \r on an \m (\l)
 ```
+
+Mounts ~/.vault-token and forwards `VAULT_ADDR` environment variable
 ```
 $ lope vault vault read secret/test/hellope
 Key                 Value
@@ -56,16 +59,24 @@ refresh_interval    768h
 value               world
 ```
 
+Mounts ~/.kube/ for easy kubectl access
 ```
 $ lope lachlanevenson/k8s-kubectl kubectl get pods
 NAME                    READY     STATUS    RESTARTS   AGE
 nginx-7c87f569d-5zvx4   1/1       Running   0          13s
 ```
 
+Mounts the docker socket
 ```
 $ lope docker docker ps
 CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS                  PORTS               NAMES
 b4b7bf56655b        lope                "/bin/sh -c 'docker …"   1 second ago        Up Less than a second                       elegant_lalande
+```
+
+Automagically forwards your ssh agent into the container (even on OSX!)
+```
+$ lope alpine/git ssh -T git@github.com
+Hi Crazybus! You've successfully authenticated, but GitHub does not provide shell access.
 ```
 
 ## Features
@@ -73,10 +84,10 @@ b4b7bf56655b        lope                "/bin/sh -c 'docker …"   1 second ago 
 ### Planned
 
 * Automatically expose ports from Dockerfile
-* Automated ssh agent forwarding for OSX. https://github.com/avsm/docker-ssh-agent-forward
 * Add yaml file to define configuration instead of doing a big one liner
 * Add option in yaml file to specify mounted files
 * Add yaml file option to include/exclude environment variables with pattern support
+* Add default .dockerignore for things like .git and .vagrant
 * Allow running multiple images/commands combos with stages
 * Allow sharing artifacts/files between stages
 * Add default .dockerignore for things like .git and .vagrant
@@ -92,3 +103,4 @@ b4b7bf56655b        lope                "/bin/sh -c 'docker …"   1 second ago 
 * Add option to use bind mounts for adding the current working directory. Also allow disabling mounting current directory altogether for use cases like `vault status`
 * Add command line flags
 * Mount the docker socket into the container
+* Automated ssh agent forwarding for OSX. https://github.com/uber-common/docker-ssh-agent-forward

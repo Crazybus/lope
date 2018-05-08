@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -14,20 +15,17 @@ import (
 	"strings"
 )
 
-func run(args []string) string {
+func run(args []string) (string, error) {
 	debug(fmt.Sprintf("Running: %v\n", strings.Join(args, " ")))
 	cmd := exec.Command(args[0], args[1:]...)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out
 	err := cmd.Run()
-	if err != nil {
-		log.Fatal(out.String())
-	}
-	return out.String()
+	return out.String(), err
 }
 
-func buildImage(image string, dockerfile string) {
+func buildImage(image string, dockerfile string) (string, error) {
 	file, err := ioutil.TempFile(path("./"), image)
 	defer os.Remove(file.Name())
 
@@ -38,7 +36,9 @@ func buildImage(image string, dockerfile string) {
 
 	build := make([]string, 0)
 	build = append(build, "docker", "build", "-t", image, "-f", file.Name(), ".")
-	debug(fmt.Sprintf(run(build)))
+	out, err := run(build)
+	debug(out)
+	return out, err
 }
 
 func path(p string) string {
@@ -62,6 +62,7 @@ type config struct {
 	image        string
 	mount        bool
 	sourceImage  string
+	ssh          bool
 	instructions []string
 	paths        []string
 }
@@ -119,6 +120,11 @@ func (l *lope) addEnvVars() {
 			l.params = append(l.params, "-e", e)
 		}
 	}
+	if l.cfg.ssh {
+		l.params = append(l.params,
+			"-e", "SSH_AUTH_SOCK=/ssh-agent/ssh-agent.sock",
+		)
+	}
 }
 
 func (l *lope) defaultParams() {
@@ -141,10 +147,51 @@ func (l *lope) addVolumes() {
 	if l.cfg.docker {
 		l.params = append(l.params, "-v", l.cfg.dockerSocket+":/var/run/docker.sock")
 	}
+	if l.cfg.ssh {
+		l.params = append(l.params,
+			"-v", "lope-ssh-agent:/ssh-agent",
+		)
+	}
 }
 
 func (l *lope) runParams() {
 	l.params = append(l.params, l.cfg.image, "-c", strings.Join(l.cfg.cmd, " "))
+}
+
+func (l *lope) sshForward() {
+
+	if !l.cfg.ssh {
+		return
+	}
+
+	// Get ssh keys currently added to ssh agent
+	k := make([]string, 0)
+	k = append(k, "ssh-add", "-L")
+	authorizedKeys, _ := run(k)
+	authorizedKeys = base64.StdEncoding.EncodeToString([]byte(authorizedKeys))
+
+	image := "uber/ssh-agent-forward:latest"
+	name := "lope-sshd"
+	volume := "lope-ssh-agent"
+	port := "2244"
+
+	r := make([]string, 0)
+	r = append(r, "docker", "volume", "create", "--name", volume)
+	run(r)
+
+	p := make([]string, 0)
+	p = append(
+		p,
+		"docker", "run",
+		"--rm",
+		"--name", name,
+		"-e", "AUTHORIZED_KEYS="+authorizedKeys,
+		"-v", volume+":/ssh-agent",
+		"-d",
+		"-p", port+":22",
+		image,
+	)
+	run(p)
 }
 
 func debug(message string) {
@@ -154,6 +201,7 @@ func debug(message string) {
 }
 
 func (l *lope) run() []string {
+	l.sshForward()
 	l.createDockerfile()
 	l.defaultParams()
 	l.addVolumes()
@@ -184,7 +232,7 @@ func main() {
 	pwd, _ := os.Getwd()
 
 	var blacklist string
-	flag.StringVar(&blacklist, "blacklist", "HOME", "Comma seperated list of environment variables that will be ignored by lope")
+	flag.StringVar(&blacklist, "blacklist", "HOME,SSH_AUTH_SOCK", "Comma seperated list of environment variables that will be ignored by lope")
 
 	var whitelist string
 	flag.StringVar(&whitelist, "whitelist", "", "Comma seperated list of environment variables that will be be included by lope")
@@ -202,6 +250,8 @@ func main() {
 	addMount := flag.Bool("addMount", false, "Setting this will add the directory into the image instead of mounting it")
 
 	docker := flag.Bool("docker", true, "Mount the docker socket inside the container")
+
+	noSSH := flag.Bool("noSSH", false, "Disabled forwarding ssh agent into the container")
 
 	dockerSocket := flag.String("dockerSocket", "/var/run/docker.sock", "Path to the docker socket")
 
@@ -238,6 +288,7 @@ func main() {
 		mount:        mount,
 		paths:        paths,
 		sourceImage:  args[0],
+		ssh:          !*noSSH,
 		whitelist:    strings.Split(whitelist, ","),
 	}
 
@@ -250,8 +301,16 @@ func main() {
 	params := lope.run()
 
 	if lope.cfg.image != lope.cfg.sourceImage {
-		buildImage(lope.cfg.image, lope.dockerfile)
+	    out, err := buildImage(lope.cfg.image, lope.dockerfile)
+	    if err != nil {
+            fmt.Println(out)
+	    	os.Exit(1)
+	    }
 	}
 
-	fmt.Printf(run(params))
+	out, err := run(params)
+	fmt.Printf(out)
+	if err != nil {
+		os.Exit(1)
+	}
 }

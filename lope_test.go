@@ -80,6 +80,7 @@ func TestAddVolumes(t *testing.T) {
 		home        string
 		mount       bool
 		docker      bool
+		ssh         bool
 		dir         string
 		want        string
 	}{
@@ -87,6 +88,7 @@ func TestAddVolumes(t *testing.T) {
 			"Add the aws directory",
 			[]string{".aws"},
 			path("./test/"),
+			false,
 			false,
 			false,
 			"",
@@ -98,6 +100,7 @@ func TestAddVolumes(t *testing.T) {
 			path("./test/"),
 			false,
 			false,
+			false,
 			"",
 			fmt.Sprintf("-v %v.aws:/root/.aws", path("./test/")),
 		},
@@ -105,6 +108,7 @@ func TestAddVolumes(t *testing.T) {
 			"Don't add any directories if none are defined",
 			[]string{},
 			path("./test/"),
+			false,
 			false,
 			false,
 			"",
@@ -116,6 +120,7 @@ func TestAddVolumes(t *testing.T) {
 			path("./test/"),
 			true,
 			false,
+			false,
 			"/home/user/pro/lope/",
 			"-v /home/user/pro/lope/:/lope/",
 		},
@@ -123,6 +128,7 @@ func TestAddVolumes(t *testing.T) {
 			"Add multiple directories",
 			[]string{".aws", ".kube"},
 			path("./test/"),
+			false,
 			false,
 			false,
 			"",
@@ -134,8 +140,19 @@ func TestAddVolumes(t *testing.T) {
 			path("./test/"),
 			false,
 			true,
+			false,
 			"",
 			"-v /var/run/docker.sock:/var/run/docker.sock",
+		},
+		{
+			"Mount ssh volumes if ssh is enabled",
+			[]string{},
+			path("./test/"),
+			false,
+			false,
+			true,
+			"",
+			"-v lope-ssh-agent:/ssh-agent",
 		},
 	}
 
@@ -147,6 +164,7 @@ func TestAddVolumes(t *testing.T) {
 			l.cfg.mount = test.mount
 			l.cfg.dir = test.dir
 			l.cfg.docker = test.docker
+			l.cfg.ssh = test.ssh
 			l.addVolumes()
 
 			got := strings.Join(l.params, " ")
@@ -166,6 +184,7 @@ func TestAddEnvVars(t *testing.T) {
 		envs        []string
 		blacklist   []string
 		whitelist   []string
+		ssh         bool
 		want        string
 	}{
 		{
@@ -173,6 +192,7 @@ func TestAddEnvVars(t *testing.T) {
 			[]string{"ENV1=hello1"},
 			[]string{},
 			[]string{},
+			false,
 			"-e ENV1=hello1",
 		},
 		{
@@ -180,6 +200,7 @@ func TestAddEnvVars(t *testing.T) {
 			[]string{"ENV1=hello1", "ENV2=hello2"},
 			[]string{},
 			[]string{},
+			false,
 			"-e ENV1=hello1 -e ENV2=hello2",
 		},
 		{
@@ -187,6 +208,7 @@ func TestAddEnvVars(t *testing.T) {
 			[]string{"ENV1=hello1"},
 			[]string{"ENV1"},
 			[]string{},
+			false,
 			"",
 		},
 		{
@@ -194,6 +216,7 @@ func TestAddEnvVars(t *testing.T) {
 			[]string{"ENV1=hello1", "ENV2=hello2", "NO=no"},
 			[]string{},
 			[]string{"ENV"},
+			false,
 			"-e ENV1=hello1 -e ENV2=hello2",
 		},
 		{
@@ -201,7 +224,16 @@ func TestAddEnvVars(t *testing.T) {
 			[]string{"ENV1=hello1", "ENV2=hello2", "NO=no"},
 			[]string{"ENV1"},
 			[]string{"ENV"},
+			false,
 			"-e ENV2=hello2",
+		},
+		{
+			"Add the SSH auth socket if ssh is enabled",
+			[]string{},
+			[]string{},
+			[]string{},
+			true,
+			"-e SSH_AUTH_SOCK=/ssh-agent/ssh-agent.sock",
 		},
 	}
 
@@ -211,6 +243,7 @@ func TestAddEnvVars(t *testing.T) {
 			l.envs = test.envs
 			l.cfg.blacklist = test.blacklist
 			l.cfg.whitelist = test.whitelist
+			l.cfg.ssh = test.ssh
 			l.addEnvVars()
 
 			got := strings.Join(l.params, " ")
