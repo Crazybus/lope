@@ -259,7 +259,7 @@ func TestCreateDockerfile(t *testing.T) {
 		description  string
 		image        string
 		mount        bool
-		noMount      bool
+		addMount     bool
 		instructions []string
 		want         []string
 	}{
@@ -267,7 +267,7 @@ func TestCreateDockerfile(t *testing.T) {
 			"Create a basic dockerfile",
 			"imageName",
 			false,
-			false,
+			true,
 			[]string{""},
 			[]string{
 				"FROM imageName",
@@ -287,10 +287,10 @@ func TestCreateDockerfile(t *testing.T) {
 			},
 		},
 		{
-			"Dont ADD the files if noMount is set",
+			"Dont ADD the files if addMount is not set",
 			"imageName",
 			false,
-			true,
+			false,
 			[]string{""},
 			[]string{
 				"FROM imageName",
@@ -308,7 +308,6 @@ func TestCreateDockerfile(t *testing.T) {
 			},
 			[]string{
 				"FROM imageName",
-				"ADD . /lope",
 				"RUN echo hello",
 				"RUN hello world",
 			},
@@ -320,7 +319,7 @@ func TestCreateDockerfile(t *testing.T) {
 			l.cfg.sourceImage = test.image
 			l.cfg.instructions = test.instructions
 			l.cfg.mount = test.mount
-			l.cfg.noMount = test.noMount
+			l.cfg.addMount = test.addMount
 			l.createDockerfile()
 
 			got := l.dockerfile

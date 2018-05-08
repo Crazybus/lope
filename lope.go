@@ -50,6 +50,7 @@ type image struct {
 }
 
 type config struct {
+	addMount     bool
 	cmd          []string
 	dir          string
 	docker       bool
@@ -60,7 +61,6 @@ type config struct {
 	home         string
 	image        string
 	mount        bool
-	noMount      bool
 	sourceImage  string
 	instructions []string
 	paths        []string
@@ -78,13 +78,18 @@ func (l *lope) createDockerfile() {
 
 	d = append(d, fmt.Sprintf("FROM %v", l.cfg.sourceImage))
 
-	if !l.cfg.mount && !l.cfg.noMount {
+	if l.cfg.addMount {
 		d = append(d, "ADD . /lope")
 	}
 
 	d = append(d, l.cfg.instructions...)
 
 	l.dockerfile = strings.Join(d, "\n")
+
+	// If there aren't any custom instructions just use the original source image
+	if len(d) == 1 {
+		l.cfg.image = l.cfg.sourceImage
+	}
 }
 
 func (l *lope) addEnvVars() {
@@ -144,7 +149,7 @@ func (l *lope) runParams() {
 
 func debug(message string) {
 	if _, ok := os.LookupEnv("DEBUG"); ok {
-		fmt.Println("DEBUG: ", message)
+		fmt.Print("DEBUG: ", message)
 	}
 }
 
@@ -203,7 +208,7 @@ func main() {
 	flag.Parse()
 	args := flag.Args()
 
-	mount := *addMount && *noMount
+	mount := !*addMount && !*noMount
 
 	paths := []string{}
 	if len(mountPaths) == 0 {
@@ -220,6 +225,7 @@ func main() {
 	}
 
 	config := &config{
+		addMount:     *addMount,
 		blacklist:    strings.Split(blacklist, ","),
 		cmd:          args[1:],
 		dir:          *dir,
@@ -230,7 +236,6 @@ func main() {
 		image:        "lope",
 		instructions: instructions,
 		mount:        mount,
-		noMount:      *noMount,
 		paths:        paths,
 		sourceImage:  args[0],
 		whitelist:    strings.Split(whitelist, ","),
@@ -243,6 +248,10 @@ func main() {
 	}
 
 	params := lope.run()
-	buildImage(lope.cfg.image, lope.dockerfile)
+
+	if lope.cfg.image != lope.cfg.sourceImage {
+		buildImage(lope.cfg.image, lope.dockerfile)
+	}
+
 	fmt.Printf(dockerRun(params))
 }
