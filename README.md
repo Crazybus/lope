@@ -103,3 +103,4 @@ Hi Crazybus! You've successfully authenticated, but GitHub does not provide shel
 * Add command line flags
 * Mount the docker socket into the container
 * Automated ssh agent forwarding for OSX. https://github.com/uber-common/docker-ssh-agent-forward
+* Run as current user and group when bind mounting

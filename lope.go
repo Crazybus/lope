@@ -166,6 +166,21 @@ func (l *lope) addVolumes() {
 	}
 }
 
+func (l *lope) addUserAndGroup() {
+	// Only run the container as the host user and group if we are bind mounting the current directory
+	if l.cfg.mount {
+		u, err := user.Current()
+		// If we can't get the current user and group just ignore this since this is only a nice way
+		// to avoid screwing up permissions for any files created in the bind mounted directory for
+		// systems like jenkins where the default docker root user can create files that jenkins can't
+		// clean up
+		if err != nil {
+			return
+		}
+		l.params = append(l.params, fmt.Sprintf("--user=%v:%v", u.Uid, u.Gid))
+	}
+}
+
 func (l *lope) runParams() {
 	l.params = append(l.params, l.cfg.image, "-c", strings.Join(l.cfg.cmd, " "))
 }
@@ -265,6 +280,7 @@ func (l *lope) run() []string {
 	l.defaultParams()
 	l.addVolumes()
 	l.addEnvVars()
+	l.addUserAndGroup()
 	l.runParams()
 	return l.params
 }

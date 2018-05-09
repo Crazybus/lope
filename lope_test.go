@@ -364,3 +364,38 @@ func TestCreateDockerfile(t *testing.T) {
 		})
 	}
 }
+
+func TestUserAndGroupParams(t *testing.T) {
+
+	var tests = []struct {
+		description string
+		mount       bool
+		want        string
+	}{
+		{
+			"--users is NOT set if mount is false",
+			false,
+			"",
+		},
+		{
+			"--users IS set if mount is true",
+			true,
+			fmt.Sprintf("--user="),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			l.params = make([]string, 0)
+			l.cfg.mount = test.mount
+			l.addUserAndGroup()
+
+			got := strings.Join(l.params, " ")
+			want := test.want
+
+			if !strings.HasPrefix(got, want) {
+				t.Errorf("got %q wanted prefix: %q", got, want)
+			}
+		})
+	}
+}
