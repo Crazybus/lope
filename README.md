@@ -32,9 +32,24 @@ env:
 * All actions are immutable. All files and dependencies are added to a docker image before running. This means no local state is modified and the state inside the container is static during its lifetime. This makes it possible to run something like `ansible-playbook` and then immediately switch to a different branch and continue to make changes.
 * Testing and tooling should be run the same in development and CI environments
 
+## Command line flags
+|Flag|Effect|
+|----|------|
+|-addMount|Setting this will add the directory into the image instead of mounting it|
+|-blacklist _string_|Comma seperated list of environment variables that will be ignored by lope (default `"HOME,SSH_AUTH_SOCK"`)|
+|-dir _string_|The directory that will be mounted into the container. Defaut is current working directory
+|-docker|Mount the docker socket inside the container (default `true`)|
+|-dockerSocket _string_|Path to the docker socket (default `"/var/run/docker.sock"`)|
+|-entrypoint _string_|The entrypoint for running the lope command (default `/bin/sh`)|
+|-instruction _value_|Extra docker image instructions to run when building the image. Can be specified multiple times|
+|-noMount|Disable mounting the current working directory into the image|
+|-noSSH|Disable forwarding ssh agent into the container|
+|-path _value_|Paths that will be mounted from the users home directory into lope. Path will be ignored if it isn't accessible. Can be specified multiple times|
+|-whitelist _string_|Comma seperated list of environment variables that will be be included by lope|
+
 ## Examples
 
-Usage: `lope -flags image commands go here`
+Usage: `lope [<flags>] <docker image> <commands go here>`
 
 Run `lope -help` for all command line flags.
 

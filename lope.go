@@ -315,6 +315,11 @@ func main() {
 	dockerSocket := flag.String("dockerSocket", "/var/run/docker.sock", "Path to the docker socket")
 
 	flag.Parse()
+	if flag.NArg() < 2 {
+		fmt.Fprintf(os.Stderr, "Usage of %[1]s:\n  %[1]s [options] <docker-image> <command>\n\nOptions:\n", filepath.Base(os.Args[0]))
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
 	args := flag.Args()
 
 	mount := !*addMount && !*noMount
