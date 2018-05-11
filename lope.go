@@ -12,6 +12,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -73,6 +74,7 @@ type config struct {
 	home         string
 	image        string
 	mount        bool
+	os           string
 	sourceImage  string
 	ssh          bool
 	instructions []string
@@ -167,18 +169,26 @@ func (l *lope) addVolumes() {
 }
 
 func (l *lope) addUserAndGroup() {
-	// Only run the container as the host user and group if we are bind mounting the current directory
-	if l.cfg.mount {
-		u, err := user.Current()
-		// If we can't get the current user and group just ignore this since this is only a nice way
-		// to avoid screwing up permissions for any files created in the bind mounted directory for
-		// systems like jenkins where the default docker root user can create files that jenkins can't
-		// clean up
-		if err != nil {
-			return
-		}
-		l.params = append(l.params, fmt.Sprintf("--user=%v:%v", u.Uid, u.Gid))
+	// This is only needed on linux since Windows and OSX don't allow a docker root user to create
+	// files that the current user can't manage
+	if l.cfg.os != "linux" {
+		return
 	}
+
+	// Only run the container as the host user and group if we are bind mounting the current directory
+	if !l.cfg.mount {
+		return
+	}
+
+	u, err := user.Current()
+	// If we can't get the current user and group just ignore this since this is only a nice way
+	// to avoid screwing up permissions for any files created in the bind mounted directory for
+	// systems like jenkins where the default docker root user can create files that jenkins can't
+	// clean up
+	if err != nil {
+		return
+	}
+	l.params = append(l.params, fmt.Sprintf("--user=%v:%v", u.Uid, u.Gid))
 }
 
 func (l *lope) runParams() {
@@ -366,6 +376,7 @@ func main() {
 		image:        "lope",
 		instructions: instructions,
 		mount:        mount,
+		os:           runtime.GOOS,
 		paths:        paths,
 		sourceImage:  args[0],
 		ssh:          !*noSSH,

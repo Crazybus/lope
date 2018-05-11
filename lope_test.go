@@ -370,16 +370,25 @@ func TestUserAndGroupParams(t *testing.T) {
 	var tests = []struct {
 		description string
 		mount       bool
+		os          string
 		want        string
 	}{
 		{
 			"--users is NOT set if mount is false",
 			false,
 			"",
+			"",
+		},
+		{
+			"--users is NOT set if mount is true but os isn't linux",
+			true,
+			"windows",
+			"",
 		},
 		{
 			"--users IS set if mount is true",
 			true,
+			"linux",
 			fmt.Sprintf("--user="),
 		},
 	}
@@ -388,6 +397,7 @@ func TestUserAndGroupParams(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			l.params = make([]string, 0)
 			l.cfg.mount = test.mount
+			l.cfg.os = test.os
 			l.addUserAndGroup()
 
 			got := strings.Join(l.params, " ")
