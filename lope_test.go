@@ -370,16 +370,25 @@ func TestUserAndGroupParams(t *testing.T) {
 	var tests = []struct {
 		description string
 		mount       bool
+		os          string
 		want        string
 	}{
 		{
 			"--users is NOT set if mount is false",
 			false,
 			"",
+			"",
+		},
+		{
+			"--users is NOT set if mount is true but os isn't linux",
+			true,
+			"windows",
+			"",
 		},
 		{
 			"--users IS set if mount is true",
 			true,
+			"linux",
 			fmt.Sprintf("--user="),
 		},
 	}
@@ -388,6 +397,7 @@ func TestUserAndGroupParams(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			l.params = make([]string, 0)
 			l.cfg.mount = test.mount
+			l.cfg.os = test.os
 			l.addUserAndGroup()
 
 			got := strings.Join(l.params, " ")
@@ -395,6 +405,52 @@ func TestUserAndGroupParams(t *testing.T) {
 
 			if !strings.HasPrefix(got, want) {
 				t.Errorf("got %q wanted prefix: %q", got, want)
+			}
+		})
+	}
+}
+
+func TestCleanEnvVars(t *testing.T) {
+
+	var tests = []struct {
+		description string
+		envs        []string
+		want        string
+	}{
+		{
+			"All env vars are valid",
+			[]string{
+				"TEST=hello",
+			},
+			"TEST=hello",
+		},
+		{
+			"Invalid env vars are stripped",
+			[]string{
+				"TEST=hello",
+				"T:EST=hello",
+			},
+			"TEST=hello",
+		},
+		{
+			"Only the key name is checked for invalid characters",
+			[]string{
+				"TEST=he:llo",
+			},
+			"TEST=he:llo",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			l.envs = test.envs
+			l.cleanEnvVars()
+
+			got := strings.Join(l.envs, ",")
+			want := test.want
+
+			if got != want {
+				t.Errorf("got %q want %q", got, want)
 			}
 		})
 	}

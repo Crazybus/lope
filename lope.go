@@ -12,6 +12,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -73,6 +74,7 @@ type config struct {
 	home         string
 	image        string
 	mount        bool
+	os           string
 	sourceImage  string
 	ssh          bool
 	instructions []string
@@ -102,6 +104,18 @@ func (l *lope) createDockerfile() {
 	// If there aren't any custom instructions just use the original source image
 	if len(d) == 1 {
 		l.cfg.image = l.cfg.sourceImage
+	}
+}
+
+// Windows has some nasty envionmental variables which aren't compatible with linux
+// This strips out any non posix environment variables
+func (l *lope) cleanEnvVars() {
+	r, _ := regexp.Compile("^[a-zA-Z_]+[a-zA-Z0-9_]$")
+	for i := len(l.envs) - 1; i >= 0; i-- {
+		env := strings.Split(l.envs[i], "=")[0]
+		if !r.MatchString(env) {
+			l.envs = append(l.envs[:i], l.envs[i+1:]...)
+		}
 	}
 }
 
@@ -167,18 +181,26 @@ func (l *lope) addVolumes() {
 }
 
 func (l *lope) addUserAndGroup() {
-	// Only run the container as the host user and group if we are bind mounting the current directory
-	if l.cfg.mount {
-		u, err := user.Current()
-		// If we can't get the current user and group just ignore this since this is only a nice way
-		// to avoid screwing up permissions for any files created in the bind mounted directory for
-		// systems like jenkins where the default docker root user can create files that jenkins can't
-		// clean up
-		if err != nil {
-			return
-		}
-		l.params = append(l.params, fmt.Sprintf("--user=%v:%v", u.Uid, u.Gid))
+	// This is only needed on linux since Windows and OSX don't allow a docker root user to create
+	// files that the current user can't manage
+	if l.cfg.os != "linux" {
+		return
 	}
+
+	// Only run the container as the host user and group if we are bind mounting the current directory
+	if !l.cfg.mount {
+		return
+	}
+
+	u, err := user.Current()
+	// If we can't get the current user and group just ignore this since this is only a nice way
+	// to avoid screwing up permissions for any files created in the bind mounted directory for
+	// systems like jenkins where the default docker root user can create files that jenkins can't
+	// clean up
+	if err != nil {
+		return
+	}
+	l.params = append(l.params, fmt.Sprintf("--user=%v:%v", u.Uid, u.Gid))
 }
 
 func (l *lope) runParams() {
@@ -279,6 +301,7 @@ func (l *lope) run() []string {
 	l.createDockerfile()
 	l.defaultParams()
 	l.addVolumes()
+	l.cleanEnvVars()
 	l.addEnvVars()
 	l.addUserAndGroup()
 	l.runParams()
@@ -366,6 +389,7 @@ func main() {
 		image:        "lope",
 		instructions: instructions,
 		mount:        mount,
+		os:           runtime.GOOS,
 		paths:        paths,
 		sourceImage:  args[0],
 		ssh:          !*noSSH,
