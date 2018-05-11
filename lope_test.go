@@ -409,3 +409,49 @@ func TestUserAndGroupParams(t *testing.T) {
 		})
 	}
 }
+
+func TestCleanEnvVars(t *testing.T) {
+
+	var tests = []struct {
+		description string
+		envs        []string
+		want        string
+	}{
+		{
+			"All env vars are valid",
+			[]string{
+				"TEST=hello",
+			},
+			"TEST=hello",
+		},
+		{
+			"Invalid env vars are stripped",
+			[]string{
+				"TEST=hello",
+				"T:EST=hello",
+			},
+			"TEST=hello",
+		},
+		{
+			"Only the key name is checked for invalid characters",
+			[]string{
+				"TEST=he:llo",
+			},
+			"TEST=he:llo",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			l.envs = test.envs
+			l.cleanEnvVars()
+
+			got := strings.Join(l.envs, ",")
+			want := test.want
+
+			if got != want {
+				t.Errorf("got %q want %q", got, want)
+			}
+		})
+	}
+}

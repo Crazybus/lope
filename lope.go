@@ -107,6 +107,18 @@ func (l *lope) createDockerfile() {
 	}
 }
 
+// Windows has some nasty envionmental variables which aren't compatible with linux
+// This strips out any non posix environment variables
+func (l *lope) cleanEnvVars() {
+	r, _ := regexp.Compile("^[a-zA-Z_]+[a-zA-Z0-9_]$")
+	for i := len(l.envs) - 1; i >= 0; i-- {
+		env := strings.Split(l.envs[i], "=")[0]
+		if !r.MatchString(env) {
+			l.envs = append(l.envs[:i], l.envs[i+1:]...)
+		}
+	}
+}
+
 func (l *lope) addEnvVars() {
 	for _, e := range l.envs {
 		pair := strings.Split(e, "=")
@@ -289,6 +301,7 @@ func (l *lope) run() []string {
 	l.createDockerfile()
 	l.defaultParams()
 	l.addVolumes()
+	l.cleanEnvVars()
 	l.addEnvVars()
 	l.addUserAndGroup()
 	l.runParams()
