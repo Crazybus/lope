@@ -99,6 +99,10 @@ Hi Crazybus! You've successfully authenticated, but GitHub does not provide shel
 
 ### Planned
 
+* Use host network so can talk to local host
+* Add option to specify custom docker flags
+* Make sure all images/names are unique so multiple lopes can be run at the same time
+* If using addMount add all .dot directories instead of mounting them
 * Automatically expose ports from Dockerfile
 * Add yaml file to define configuration instead of doing a big one liner
 * Add option in yaml file to specify mounted files
@@ -109,6 +113,7 @@ Hi Crazybus! You've successfully authenticated, but GitHub does not provide shel
 
 ### Done
 
+* Write output in realtime
 * Run a docker container with current directory added
 * Forward all environment variables into the container
 * Add blacklist and whitelist regexes to filter environment variables
