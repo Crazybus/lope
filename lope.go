@@ -28,13 +28,20 @@ func runBackground(args []string) error {
 	return nil
 }
 
-func run(args []string) (string, error) {
+func run(args []string, stdout bool) (output string, err error) {
 	debug(fmt.Sprintf("Running: %v\n", strings.Join(args, " ")))
 	cmd := exec.Command(args[0], args[1:]...)
+
 	var out bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &out
-	err := cmd.Run()
+
+	if stdout {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	} else {
+		cmd.Stdout = &out
+		cmd.Stderr = &out
+	}
+	err = cmd.Run()
 	return out.String(), err
 }
 
@@ -49,7 +56,7 @@ func buildImage(image string, dockerfile string) (string, error) {
 
 	build := make([]string, 0)
 	build = append(build, "docker", "build", "-t", image, "-f", file.Name(), ".")
-	out, err := run(build)
+	out, err := run(build, false)
 	debug(out)
 	return out, err
 }
@@ -216,7 +223,7 @@ func (l *lope) sshForward() {
 	// Get ssh keys currently added to ssh agent
 	k := make([]string, 0)
 	k = append(k, "ssh-add", "-L")
-	authorizedKeys, _ := run(k)
+	authorizedKeys, _ := run(k, false)
 	authorizedKeys = base64.StdEncoding.EncodeToString([]byte(authorizedKeys))
 
 	image := "uber/ssh-agent-forward:latest"
@@ -228,7 +235,7 @@ func (l *lope) sshForward() {
 	// Create a volume to mount our ssh-agent into
 	r := make([]string, 0)
 	r = append(r, "docker", "volume", "create", "--name", volume)
-	run(r)
+	run(r, false)
 
 	// Start the ssh server where we will forward our agent to
 	p := make([]string, 0)
@@ -243,7 +250,7 @@ func (l *lope) sshForward() {
 		"-p", port+":22",
 		image,
 	)
-	run(p)
+	run(p, false)
 
 	// Wait for the ssh server to be responding
 	w := make([]string, 0)
@@ -260,7 +267,7 @@ func (l *lope) sshForward() {
 	)
 
 	for i := 1; i <= 10; i++ {
-		_, err := run(w)
+		_, err := run(w, false)
 		if err != nil {
 			time.Sleep(3 * time.Second)
 		} else {
@@ -370,6 +377,7 @@ func main() {
 			path(".aws/"),
 			path(".kube/"),
 			path(".ssh/"),
+			path(".ansible/"),
 		}
 	} else {
 		for _, p := range mountPaths {
@@ -412,8 +420,7 @@ func main() {
 		}
 	}
 
-	out, err := run(params)
-	fmt.Printf(out)
+	_, err := run(params, true)
 	if err != nil {
 		os.Exit(1)
 	}
