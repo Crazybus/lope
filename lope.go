@@ -377,7 +377,6 @@ func main() {
 			path(".aws/"),
 			path(".kube/"),
 			path(".ssh/"),
-			path(".ansible/"),
 		}
 	} else {
 		for _, p := range mountPaths {
