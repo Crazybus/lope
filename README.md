@@ -34,17 +34,20 @@ env:
 
 ## Command line flags
 | Flag                   | Effect                                                                                                                                           |
-|------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| -addDocker             | Uses wget to download the docker client binary into the image (default `false`)                                                                  |
 | -addMount              | Setting this will add the directory into the image instead of mounting it                                                                        |
-| -blacklist _string_    | Comma seperated list of environment variables that will be ignored by lope (default `"HOME,SSH_AUTH_SOCK"`)                                      |
+| -blacklist _string_    | Comma seperated list of environment variables that will be ignored by lope (default `"HOME,SSH_AUTH_SOCK,TMPDIR"`)                               |
 | -dir _string_          | The directory that will be mounted into the container. Defaut is current working directory                                                       |
-| -docker                | Mount the docker socket inside the container (default `true`)                                                                                    |
 | -dockerSocket _string_ | Path to the docker socket (default `"/var/run/docker.sock"`)                                                                                     |
 | -entrypoint _string_   | The entrypoint for running the lope command (default `/bin/sh`)                                                                                  |
 | -instruction _value_   | Extra docker image instructions to run when building the image. Can be specified multiple times                                                  |
+| -noDocker              | Disables mounting the docker socket inside the container (default `false`)                                                                       |
+| -noTty                 | Disable the --tty flag (default `false`)                                                                                                         |
 | -noMount               | Disable mounting the current working directory into the image                                                                                    |
 | -noSSH                 | Disable forwarding ssh agent into the container                                                                                                  |
 | -path _value_          | Paths that will be mounted from the users home directory into lope. Path will be ignored if it isn't accessible. Can be specified multiple times |
+| -workDir  _string_     | The default working directory for the docker image (default `"/lope"`)                                                                           |
 | -whitelist _string_    | Comma seperated list of environment variables that will be be included by lope                                                                   |
 
 
@@ -64,6 +67,12 @@ lope.go
 ```
 $ lope alpine cat /etc/issue
 Welcome to Alpine Linux 3.7 Kernel \r on an \m (\l)
+```
+
+Attach into the container for some interactive debugging fun
+```
+$ lope alpine sh
+/lope #
 ```
 
 Mounts ~/.vault-token and forwards `VAULT_ADDR` environment variable
@@ -95,12 +104,55 @@ $ lope alpine/git ssh -T git@github.com
 Hi Crazybus! You've successfully authenticated, but GitHub does not provide shell access.
 ```
 
+Start a web server and connect to it from another lope command
+```
+$ lope python python3 -m http.server
+Serving HTTP on 0.0.0.0 port 8000 (http://0.0.0.0:8000/) ...
+
+# In another terminal
+$ lope python curl -I localhost:8000
+HTTP/1.0 200 OK
+Server: SimpleHTTP/0.6 Python/3.6.5
+Date: Sat, 02 Jun 2018 19:42:42 GMT
+Content-type: text/html; charset=ascii
+Content-Length: 764
+```
+
+Run the unit tests for [phpunit](https://github.com/sebastianbergmann/phpunit)
+```
+$ lope composer 'composer install && ./phpunit'
+OK, but incomplete, skipped, or risky tests!
+Tests: 1857, Assertions: 3206, Skipped: 13.
+```
+
+Add docker client to a random docker image (requires wget to be in the image)
+```
+$ lope -addDocker alpine docker ps
+CONTAINER ID        IMAGE                           COMMAND                  CREATED             STATUS                  PORTS                   NAMES
+bf8d6885a2de        lope                            "/bin/sh -c 'docker …"   1 second ago        Up Less than a second                           elegant_villani
+```
+
+Run the kitchen docker tests for the ansible role [ansible-elasticsearch](https://github.com/elastic/ansible-elasticsearch)
+```
+lope -workDir /lope/elasticsearch \
+     -addDocker \
+     ruby:2.3-onbuild \
+     bundle exec kitchen converge standard-ubuntu-1604
+```
+
+Run ansible against a host that uses ssh to authenticate
+```
+$ lope williamyeh/ansible:alpine3 ansible all -i 'lope-host,' -m shell -a 'hostname'
+lope-host | SUCCESS | rc=0 >>
+debian-9
+```
+
 ## Features
 
 ### Planned
 
-* Use host network so can talk to local host
 * Add option to specify custom docker flags
+* Get vagrant/virtualbox combo working
 * Make sure all images/names are unique so multiple lopes can be run at the same time
 * If using addMount add all .dot directories instead of mounting them
 * Automatically expose ports from Dockerfile
@@ -113,6 +165,8 @@ Hi Crazybus! You've successfully authenticated, but GitHub does not provide shel
 
 ### Done
 
+* Add support for attaching into container for debugging
+* Use host network by default so containers can talk to localhost and other containers
 * Write output in realtime
 * Run a docker container with current directory added
 * Forward all environment variables into the container

@@ -35,6 +35,7 @@ func run(args []string, stdout bool) (output string, err error) {
 	var out bytes.Buffer
 
 	if stdout {
+		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	} else {
@@ -70,6 +71,7 @@ type image struct {
 }
 
 type config struct {
+	addDocker    bool
 	addMount     bool
 	cmd          []string
 	dir          string
@@ -86,6 +88,8 @@ type config struct {
 	ssh          bool
 	instructions []string
 	paths        []string
+	tty          bool
+	workDir      string
 }
 
 type lope struct {
@@ -101,7 +105,17 @@ func (l *lope) createDockerfile() {
 	d = append(d, fmt.Sprintf("FROM %v", l.cfg.sourceImage))
 
 	if l.cfg.addMount {
-		d = append(d, "ADD . /lope")
+		d = append(d, fmt.Sprintf("ADD . %v", l.cfg.workDir))
+	}
+
+	if l.cfg.addDocker {
+		d = append(
+			d,
+			`RUN wget -q https://download.docker.com/linux/static/stable/x86_64/docker-18.03.1-ce.tgz && \
+			tar xfv docker* && \
+			mv docker/docker /usr/local/bin && \
+			rm -rf docker/`,
+		)
 	}
 
 	d = append(d, l.cfg.instructions...)
@@ -161,7 +175,22 @@ func (l *lope) addEnvVars() {
 }
 
 func (l *lope) defaultParams() {
-	l.params = append(l.params, "docker", "run", "--rm", "--entrypoint", l.cfg.entrypoint, "-w", "/lope")
+	l.params = append(
+		l.params,
+		"docker",
+		"run",
+		"--rm",
+		"--interactive",
+		"--entrypoint", l.cfg.entrypoint,
+		"--workdir", l.cfg.workDir,
+		"--net", "host",
+	)
+	if l.cfg.tty {
+		l.params = append(
+			l.params,
+			"--tty",
+		)
+	}
 }
 
 func (l *lope) addVolumes() {
@@ -174,7 +203,7 @@ func (l *lope) addVolumes() {
 		}
 	}
 	if l.cfg.mount {
-		path := fmt.Sprintf("%v:/lope/", l.cfg.dir)
+		path := fmt.Sprintf("%v:%v", l.cfg.dir, l.cfg.workDir)
 		l.params = append(l.params, "-v", path)
 	}
 	if l.cfg.docker {
@@ -337,7 +366,7 @@ func main() {
 	pwd, _ := os.Getwd()
 
 	var blacklist string
-	flag.StringVar(&blacklist, "blacklist", "HOME,SSH_AUTH_SOCK", "Comma seperated list of environment variables that will be ignored by lope")
+	flag.StringVar(&blacklist, "blacklist", "HOME,SSH_AUTH_SOCK,TMPDIR", "Comma seperated list of environment variables that will be ignored by lope")
 
 	var whitelist string
 	flag.StringVar(&whitelist, "whitelist", "", "Comma seperated list of environment variables that will be be included by lope")
@@ -354,11 +383,17 @@ func main() {
 
 	addMount := flag.Bool("addMount", false, "Setting this will add the directory into the image instead of mounting it")
 
-	docker := flag.Bool("docker", true, "Mount the docker socket inside the container")
+	noDocker := flag.Bool("noDocker", false, "Disables mounting the docker socket inside the container")
 
 	noSSH := flag.Bool("noSSH", false, "Disable forwarding ssh agent into the container")
 
 	dockerSocket := flag.String("dockerSocket", "/var/run/docker.sock", "Path to the docker socket")
+
+	workDir := flag.String("workDir", "/lope", "The default working directory for the docker image")
+
+	noTty := flag.Bool("noTty", false, "Disable the --tty flag (needed for CI systems)")
+
+	addDocker := flag.Bool("addDocker", false, "Uses wget to download the docker client binary into the image")
 
 	flag.Parse()
 	if flag.NArg() < 2 {
@@ -385,11 +420,12 @@ func main() {
 	}
 
 	config := &config{
+		addDocker:    *addDocker,
 		addMount:     *addMount,
 		blacklist:    strings.Split(blacklist, ","),
 		cmd:          args[1:],
 		dir:          *dir,
-		docker:       *docker,
+		docker:       !*noDocker,
 		dockerSocket: *dockerSocket,
 		entrypoint:   *entrypoint,
 		home:         home,
@@ -400,7 +436,9 @@ func main() {
 		paths:        paths,
 		sourceImage:  args[0],
 		ssh:          !*noSSH,
+		tty:          !*noTty,
 		whitelist:    strings.Split(whitelist, ","),
+		workDir:      *workDir,
 	}
 
 	lope := lope{
