@@ -15,6 +15,7 @@ var c = &config{
 	home:         "/home/lope",
 	image:        "lopeImage",
 	instructions: []string{""},
+	workDir:      "/lope",
 	paths: []string{
 		path(".vault-token"),
 		path(".aws/"),
@@ -122,7 +123,7 @@ func TestAddVolumes(t *testing.T) {
 			false,
 			false,
 			"/home/user/pro/lope/",
-			"-v /home/user/pro/lope/:/lope/",
+			"-v /home/user/pro/lope/:/lope",
 		},
 		{
 			"Add multiple directories",
@@ -266,7 +267,7 @@ func TestDefaultParams(t *testing.T) {
 		{
 			"Override the entrypoint",
 			"/bin/ohyeah",
-			"docker run --rm --entrypoint /bin/ohyeah -w /lope",
+			"docker run --rm --interactive --entrypoint /bin/ohyeah --workdir /lope --net host",
 		},
 	}
 
