@@ -84,6 +84,7 @@ type config struct {
 	image        string
 	mount        bool
 	os           string
+	root         bool
 	sourceImage  string
 	ssh          bool
 	instructions []string
@@ -217,14 +218,8 @@ func (l *lope) addVolumes() {
 }
 
 func (l *lope) addUserAndGroup() {
-	// This is only needed on linux since Windows and OSX don't allow a docker root user to create
-	// files that the current user can't manage
-	if l.cfg.os != "linux" {
-		return
-	}
 
-	// Only run the container as the host user and group if we are bind mounting the current directory
-	if !l.cfg.mount {
+	if l.cfg.root {
 		return
 	}
 
@@ -401,6 +396,8 @@ func main() {
 
 	addDocker := flag.Bool("addDocker", false, "Uses wget to download the docker client binary into the image")
 
+	noRoot := flag.Bool("noRoot", false, "Use current user instead of the root user")
+
 	flag.Parse()
 	if flag.NArg() < 2 {
 		fmt.Fprintf(os.Stderr, "Usage of %[1]s:\n  %[1]s [options] <docker-image> <command>\n\nOptions:\n", filepath.Base(os.Args[0]))
@@ -440,6 +437,7 @@ func main() {
 		mount:        mount,
 		os:           runtime.GOOS,
 		paths:        paths,
+		root:         !*noRoot,
 		sourceImage:  args[0],
 		ssh:          !*noSSH,
 		tty:          !*noTty,
