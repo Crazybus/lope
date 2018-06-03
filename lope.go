@@ -236,7 +236,13 @@ func (l *lope) addUserAndGroup() {
 	if err != nil {
 		return
 	}
-	l.params = append(l.params, fmt.Sprintf("--user=%v:%v", u.Uid, u.Gid))
+	groupID := u.Gid
+	// If the docker group is avaiable set it as the default group so that we can read the docker socket
+	g, _ := user.LookupGroup("docker")
+	if g != nil {
+		groupID = g.Gid
+	}
+	l.params = append(l.params, fmt.Sprintf("--user=%v:%v", u.Uid, groupID))
 }
 
 func (l *lope) runParams() {
