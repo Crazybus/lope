@@ -43,6 +43,7 @@ env:
 | -entrypoint _string_   | The entrypoint for running the lope command (default `/bin/sh`)                                                                                  |
 | -instruction _value_   | Extra docker image instructions to run when building the image. Can be specified multiple times                                                  |
 | -noDocker              | Disables mounting the docker socket inside the container (default `false`)                                                                       |
+| -noRoot                | Use current user instead of the root user (default `false`)                                                                                      |
 | -noTty                 | Disable the --tty flag (default `false`)                                                                                                         |
 | -noMount               | Disable mounting the current working directory into the image                                                                                    |
 | -noSSH                 | Disable forwarding ssh agent into the container                                                                                                  |
