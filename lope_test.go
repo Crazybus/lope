@@ -262,12 +262,20 @@ func TestDefaultParams(t *testing.T) {
 	var tests = []struct {
 		description string
 		entrypoint  string
+		tty         bool
 		want        string
 	}{
 		{
 			"Override the entrypoint",
 			"/bin/ohyeah",
+			false,
 			"docker run --rm --interactive --entrypoint /bin/ohyeah --workdir /lope --net host",
+		},
+		{
+			"Allocate a pseudo-TTY",
+			"/bin/ohyeah",
+			true,
+			"docker run --rm --interactive --entrypoint /bin/ohyeah --workdir /lope --net host --tty",
 		},
 	}
 
@@ -275,6 +283,7 @@ func TestDefaultParams(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			l.params = make([]string, 0)
 			l.cfg.entrypoint = test.entrypoint
+			l.cfg.tty = test.tty
 			l.defaultParams()
 
 			got := strings.Join(l.params, " ")
@@ -294,6 +303,7 @@ func TestCreateDockerfile(t *testing.T) {
 		image        string
 		mount        bool
 		addMount     bool
+		addDocker    bool
 		instructions []string
 		want         []string
 	}{
@@ -302,6 +312,7 @@ func TestCreateDockerfile(t *testing.T) {
 			"imageName",
 			false,
 			true,
+			false,
 			[]string{""},
 			[]string{
 				"FROM imageName",
@@ -314,6 +325,7 @@ func TestCreateDockerfile(t *testing.T) {
 			"imageName",
 			true,
 			false,
+			false,
 			[]string{""},
 			[]string{
 				"FROM imageName",
@@ -323,6 +335,7 @@ func TestCreateDockerfile(t *testing.T) {
 		{
 			"Dont ADD the files if addMount is not set",
 			"imageName",
+			false,
 			false,
 			false,
 			[]string{""},
@@ -336,6 +349,7 @@ func TestCreateDockerfile(t *testing.T) {
 			"imageName",
 			false,
 			false,
+			false,
 			[]string{
 				"RUN echo hello",
 				"RUN hello world",
@@ -346,6 +360,21 @@ func TestCreateDockerfile(t *testing.T) {
 				"RUN hello world",
 			},
 		},
+		{
+			"Add docker binary to image",
+			"imageName",
+			false,
+			false,
+			true,
+			[]string{},
+			[]string{
+				"FROM imageName",
+				`RUN wget -q https://download.docker.com/linux/static/stable/x86_64/docker-18.03.1-ce.tgz && \`,
+				`tar xfv docker* && \`,
+				`mv docker/docker /usr/local/bin && \`,
+				`rm -rf docker/`,
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -354,6 +383,7 @@ func TestCreateDockerfile(t *testing.T) {
 			l.cfg.instructions = test.instructions
 			l.cfg.mount = test.mount
 			l.cfg.addMount = test.addMount
+			l.cfg.addDocker = test.addDocker
 			l.createDockerfile()
 
 			got := l.dockerfile
@@ -363,6 +393,20 @@ func TestCreateDockerfile(t *testing.T) {
 				t.Errorf("got %q want %q", got, want)
 			}
 		})
+	}
+}
+func TestUseSourceImage(t *testing.T) {
+	l.cfg.sourceImage = "canttouchthis"
+	l.cfg.addMount = false
+	l.cfg.instructions = []string{}
+	l.cfg.addDocker = false
+	l.createDockerfile()
+
+	got := l.cfg.image
+	want := l.cfg.sourceImage
+
+	if l.cfg.image != l.cfg.sourceImage {
+		t.Errorf("got %q want %q", got, want)
 	}
 }
 

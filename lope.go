@@ -112,10 +112,10 @@ func (l *lope) createDockerfile() {
 	if l.cfg.addDocker {
 		d = append(
 			d,
-			`RUN wget -q https://download.docker.com/linux/static/stable/x86_64/docker-18.03.1-ce.tgz && \
-			tar xfv docker* && \
-			mv docker/docker /usr/local/bin && \
-			rm -rf docker/`,
+			`RUN wget -q https://download.docker.com/linux/static/stable/x86_64/docker-18.03.1-ce.tgz && \`,
+			`tar xfv docker* && \`,
+			`mv docker/docker /usr/local/bin && \`,
+			`rm -rf docker/`,
 		)
 	}
 
