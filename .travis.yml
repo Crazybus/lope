@@ -12,7 +12,7 @@ script:
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-  - go run lope.go golang:1.10 /usr/local/go/bin/go run build/build.go
+  - go run lope.go -noSSH golang:1.10 /usr/local/go/bin/go run build/build.go
 
 deploy:
   provider: releases
