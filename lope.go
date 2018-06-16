@@ -386,7 +386,7 @@ func main() {
 
 	noDocker := flag.Bool("noDocker", false, "Disables mounting the docker socket inside the container")
 
-	noSSH := flag.Bool("noSSH", false, "Disable forwarding ssh agent into the container")
+	ssh := flag.Bool("ssh", false, "Enable forwarding ssh agent into the container")
 
 	dockerSocket := flag.String("dockerSocket", "/var/run/docker.sock", "Path to the docker socket")
 
@@ -439,7 +439,7 @@ func main() {
 		paths:        paths,
 		root:         !*noRoot,
 		sourceImage:  args[0],
-		ssh:          !*noSSH,
+		ssh:          *ssh,
 		tty:          !*noTty,
 		whitelist:    strings.Split(whitelist, ","),
 		workDir:      *workDir,
