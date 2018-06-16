@@ -9,19 +9,17 @@ services:
 
 script:
   - go test -v -race -coverprofile=coverage.txt -covermode=atomic
-  - go run lope.go -noSSH alpine ls
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-  - go get github.com/mitchellh/gox
-  - ./.build.sh
+  - go run lope.go -noSSH golang:1.10 /usr/local/go/bin/go run build/build.go
 
 deploy:
   provider: releases
   api_key:
     secure: iX45SoVidPDe+YMs/OrOD6gezM8e7ACFoLVs0I7OS0L2/boQhaxcj9Kk+hr3SOHraahwZhcbd2Oypb2qJzhYxLC3WRVGPUGBzH6KKK4gufuxLXlJR7vi8v2W5Bb4/hMEjIcwS04fmj5J5OK5hYq/NXHWH/e/5dOlzoI7jNel9NaQ/g77HMcDgPoU79xSjEfKxbQjb6zWTLGw31g72cJRC6OeLrZP3tV8Hi6bRa6YbMrswPuS1OoxNvqYziFmvcNpW5B5z0GmpAuwnqewhYl+S+eNM5DOduWNvFDDSAbUc6sJ17/JOIAuXpNTwmpv7j1K5nA2NBjrF1C0nHix7xQWGKtg681vvnhKng4ptunnqCVJhR8WJT4LD7gkS9xdQX9YU1TDBSnp5EmNibda8I4SE6wAkZCZtKWtXm2AMmJ6/kzj5JDDmz8txt4wSWx/oLsmSHaF1UN3PDVv75IfzRXfiT4FoNyqgYcAcSW8TXhEYxAsFtcqWMeBCxNVAnNL+Zv0ow5Jc7fMNTYlgNLSUboyhLdsHKVrv81FZ/LMZ6ES/XZiP9i0Yh4FM4zWReyvBzV8FV9Wl7iWO1ht3Rh4FqjgtjRF335KXyduN1DHUNGQpphPs4gkj4E6Yj1syoUcl05bZ0yR0BRWZV4v3oHQZX759hWtukK8NyuVOFEDDy70hQ0=
   file_glob: true
-  file: bin/*
+  file: build/lope*
   skip_cleanup: true
   on:
     tags: true
