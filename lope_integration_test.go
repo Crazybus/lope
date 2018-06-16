@@ -2,11 +2,12 @@ package main
 
 import (
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 )
 
-var binaryName = "lope"
+var binaryName = filepath.FromSlash("./lope")
 
 func TestLopeCli(t *testing.T) {
 
@@ -26,7 +27,6 @@ func TestLopeCli(t *testing.T) {
 			"Run a basic alpine image",
 			[]string{
 				"-noTty",
-				"-noSSH",
 				"alpine",
 				"ls",
 			},
@@ -38,7 +38,6 @@ func TestLopeCli(t *testing.T) {
 			"Run docker inside lope",
 			[]string{
 				"-noTty",
-				"-noSSH",
 				"-addDocker",
 				"alpine",
 				"docker",

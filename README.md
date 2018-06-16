@@ -46,7 +46,7 @@ env:
 | -noRoot                | Use current user instead of the root user (default `false`)                                                                                      |
 | -noTty                 | Disable the --tty flag (default `false`)                                                                                                         |
 | -noMount               | Disable mounting the current working directory into the image                                                                                    |
-| -noSSH                 | Disable forwarding ssh agent into the container                                                                                                  |
+| -ssh                   | Enable forwarding ssh agent into the container                                                                                                   |
 | -path _value_          | Paths that will be mounted from the users home directory into lope. Path will be ignored if it isn't accessible. Can be specified multiple times |
 | -workDir  _string_     | The default working directory for the docker image (default `"/lope"`)                                                                           |
 | -whitelist _string_    | Comma seperated list of environment variables that will be be included by lope                                                                   |
@@ -101,7 +101,7 @@ b4b7bf56655b        lope                "/bin/sh -c 'docker …"   1 second ago 
 
 Automagically forwards your ssh agent into the container (even on OSX!)
 ```
-$ lope alpine/git ssh -T git@github.com
+$ lope -ssh alpine/git ssh -T git@github.com
 Hi Crazybus! You've successfully authenticated, but GitHub does not provide shell access.
 ```
 
@@ -143,7 +143,7 @@ lope -workDir /lope/elasticsearch \
 
 Run ansible against a host that uses ssh to authenticate
 ```
-$ lope williamyeh/ansible:alpine3 ansible all -i 'lope-host,' -m shell -a 'hostname'
+$ lope -ssh williamyeh/ansible:alpine3 ansible all -i 'lope-host,' -m shell -a 'hostname'
 lope-host | SUCCESS | rc=0 >>
 debian-9
 ```
