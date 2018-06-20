@@ -135,11 +135,19 @@ bf8d6885a2de        lope                            "/bin/sh -c 'docker …"   1
 
 Run the kitchen docker tests for the ansible role [ansible-elasticsearch](https://github.com/elastic/ansible-elasticsearch)
 ```
-lope -workDir /lope/elasticsearch \
-     -addDocker \
-     ruby:2.3-onbuild \
-     bundle exec kitchen converge standard-ubuntu-1604
+lope -workDir /elasticsearch -addDocker ruby:2.3-onbuild make verify
 ```
+What just happened?
+
+* `-workDir /lope/elasticsearch` set the current working directory to start with `elasticsearch` since the role name needs to match the parent directory
+* `-addDocker` automatically downloaded the docker client binary into the image so we can run docker commands
+* The `ruby:2.3-onbuild` docker image automatically installed all of the ruby depdencies of test kitchen with bundler
+
+What else did lope do?
+
+* Bind mounted the current directory into the image. This means state is persisted and we can run test kitchen multiple times
+* Mounted the docker socket into the container so docker works
+* Set the networking to host (`--net=host`) so that test kitchen can connect to the started hosts via ssh
 
 Run ansible against a host that uses ssh to authenticate
 ```
