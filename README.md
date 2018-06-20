@@ -28,7 +28,7 @@ env:
 ## Design goals
 
 * Docker is the only dependency needed for developing/testing/deploying
-* Defaults which favor usability over speed and security while still having configuration options available to restrict which environment variables/secrets are forwarded into containers for proper usage. 
+* Defaults which favour usability over speed and security while still having configuration options available to restrict which environment variables/secrets are forwarded into containers for proper usage. 
 * All actions are immutable. All files and dependencies are added to a docker image before running. This means no local state is modified and the state inside the container is static during its lifetime. This makes it possible to run something like `ansible-playbook` and then immediately switch to a different branch and continue to make changes.
 * Testing and tooling should be run the same in development and CI environments
 
