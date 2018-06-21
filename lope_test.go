@@ -500,3 +500,51 @@ func TestCleanEnvVars(t *testing.T) {
 		})
 	}
 }
+
+func TestCommandProxy(t *testing.T) {
+
+	var tests = []struct {
+		description string
+		enabled     bool
+		port        string
+		want        string
+	}{
+		{
+			"No lope server env is added if it isn't enabled",
+			false,
+			"",
+			"",
+		},
+		{
+			"When lope server is enabled env var is exported",
+			true,
+			"8000",
+			"8000",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			l.cfg.cmdProxy = test.enabled
+			l.cfg.cmdProxyPort = test.port
+			l.commandProxy()
+
+			got := ""
+			for _, e := range l.envs {
+				split := strings.Split(e, "=")
+				if split[0] == "LOPE_PROXY_ADDR" {
+					addr := split[1]
+					p := strings.Split(addr, ":")
+					if len(p) == 2 {
+						got = p[1]
+					}
+				}
+			}
+			want := test.want
+
+			if got != want {
+				t.Errorf("got %q want %q", got, want)
+			}
+		})
+	}
+}

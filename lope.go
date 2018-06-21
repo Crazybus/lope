@@ -3,10 +3,13 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/user"
@@ -66,6 +69,47 @@ func path(p string) string {
 	return filepath.FromSlash(p)
 }
 
+func cmdProxy(w http.ResponseWriter, r *http.Request) {
+	type message struct {
+		Command string   `json:"command"`
+		Args    []string `json:"args"`
+	}
+
+	b, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	var msg message
+	err = json.Unmarshal(b, &msg)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	c := exec.Command(msg.Command, msg.Args...)
+	out, err := c.CombinedOutput()
+	if err != nil {
+		fmt.Println(string(out), err)
+	}
+
+	w.Header().Set("content-type", "application/json")
+	w.Write(out)
+}
+
+func getIPAddress() (ip string) {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr).IP.String()
+	return localAddr
+}
+
 type image struct {
 	params []string
 }
@@ -86,6 +130,8 @@ type config struct {
 	os           string
 	root         bool
 	sourceImage  string
+	cmdProxy     bool
+	cmdProxyPort string
 	ssh          bool
 	instructions []string
 	paths        []string
@@ -327,6 +373,25 @@ func (l *lope) sshForward() {
 	}
 }
 
+func (l *lope) commandProxy() {
+	if !l.cfg.cmdProxy {
+		return
+	}
+
+	http.HandleFunc("/", cmdProxy)
+	address := ":" + l.cfg.cmdProxyPort
+
+	debug(fmt.Sprintf("Starting lope command proxy server on address: %q", address))
+
+	go http.ListenAndServe(address, nil)
+
+	ip := getIPAddress()
+
+	l.params = append(l.params, "--add-host=localhost:"+ip)
+
+	l.envs = append(l.envs, "LOPE_PROXY_ADDR="+ip+":"+l.cfg.cmdProxyPort)
+}
+
 func debug(message string) {
 	if _, ok := os.LookupEnv("DEBUG"); ok {
 		fmt.Print("DEBUG: ", message)
@@ -337,6 +402,7 @@ func (l *lope) run() []string {
 	l.sshForward()
 	l.createDockerfile()
 	l.defaultParams()
+	l.commandProxy()
 	l.addVolumes()
 	l.cleanEnvVars()
 	l.addEnvVars()
@@ -398,6 +464,10 @@ func main() {
 
 	noRoot := flag.Bool("noRoot", false, "Use current user instead of the root user")
 
+	cmdProxy := flag.Bool("cmdProxy", false, "Starts a server that the lope container can use to run commands on the host")
+
+	cmdProxyPort := flag.String("cmdProxyPort", "24242", "Listening port that will be used for the lope command proxy")
+
 	flag.Parse()
 	if flag.NArg() < 2 {
 		fmt.Fprintf(os.Stderr, "Usage of %[1]s:\n  %[1]s [options] <docker-image> <command>\n\nOptions:\n", filepath.Base(os.Args[0]))
@@ -427,6 +497,8 @@ func main() {
 		addMount:     *addMount,
 		blacklist:    strings.Split(blacklist, ","),
 		cmd:          args[1:],
+		cmdProxy:     *cmdProxy,
+		cmdProxyPort: *cmdProxyPort,
 		dir:          *dir,
 		docker:       !*noDocker,
 		dockerSocket: *dockerSocket,
