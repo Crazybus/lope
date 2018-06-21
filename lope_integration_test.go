@@ -49,6 +49,21 @@ func TestLopeCli(t *testing.T) {
 				"lope",
 			},
 		},
+		{
+			"Run a command via the command proxy",
+			[]string{
+				"-noTty",
+				"-cmdProxy",
+				"alpine",
+				"wget", "-q", "-O-",
+				`--post-data='{"command":"lope", "args": ["-noTty", "alpine", "ls"]}'`,
+				"--header=Content-Type:application/json",
+				"http://$LOPE_PROXY_ADDR",
+			},
+			[]string{
+				"README.md",
+			},
+		},
 	}
 
 	for _, test := range tests {

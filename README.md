@@ -32,25 +32,49 @@ env:
 * All actions are immutable. All files and dependencies are added to a docker image before running. This means no local state is modified and the state inside the container is static during its lifetime. This makes it possible to run something like `ansible-playbook` and then immediately switch to a different branch and continue to make changes.
 * Testing and tooling should be run the same in development and CI environments
 
-## Command line flags
-| Flag                   | Effect                                                                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| -addDocker             | Uses wget to download the docker client binary into the image (default `false`)                                                                  |
-| -addMount              | Setting this will add the directory into the image instead of mounting it                                                                        |
-| -blacklist _string_    | Comma seperated list of environment variables that will be ignored by lope (default `"HOME,SSH_AUTH_SOCK,TMPDIR"`)                               |
-| -dir _string_          | The directory that will be mounted into the container. Defaut is current working directory                                                       |
-| -dockerSocket _string_ | Path to the docker socket (default `"/var/run/docker.sock"`)                                                                                     |
-| -entrypoint _string_   | The entrypoint for running the lope command (default `/bin/sh`)                                                                                  |
-| -instruction _value_   | Extra docker image instructions to run when building the image. Can be specified multiple times                                                  |
-| -noDocker              | Disables mounting the docker socket inside the container (default `false`)                                                                       |
-| -noRoot                | Use current user instead of the root user (default `false`)                                                                                      |
-| -noTty                 | Disable the --tty flag (default `false`)                                                                                                         |
-| -noMount               | Disable mounting the current working directory into the image                                                                                    |
-| -ssh                   | Enable forwarding ssh agent into the container                                                                                                   |
-| -path _value_          | Paths that will be mounted from the users home directory into lope. Path will be ignored if it isn't accessible. Can be specified multiple times |
-| -workDir  _string_     | The default working directory for the docker image (default `"/lope"`)                                                                           |
-| -whitelist _string_    | Comma seperated list of environment variables that will be be included by lope                                                                   |
+## Usage
 
+```
+$ lope
+Usage of lope:
+  lope [options] <docker-image> <command>
+
+Options:
+  -addDocker
+    	Uses wget to download the docker client binary into the image
+  -addMount
+    	Setting this will add the directory into the image instead of mounting it
+  -blacklist string
+    	Comma seperated list of environment variables that will be ignored by lope (default "HOME,SSH_AUTH_SOCK,TMPDIR")
+  -cmdProxy
+    	Starts a server that the lope container can use to run commands on the host
+  -cmdProxyPort string
+    	Listening port that will be used for the lope command proxy (default "24242")
+  -dir string
+    	The directory that will be mounted into the container. Defaut is current working directory (default "/Users/mick/pro/lope")
+  -dockerSocket string
+    	Path to the docker socket (default "/var/run/docker.sock")
+  -entrypoint string
+    	The entrypoint for running the lope command (default "/bin/sh")
+  -instruction value
+    	Extra docker image instructions to run when building the image. Can be specified multiple times
+  -noDocker
+    	Disables mounting the docker socket inside the container
+  -noMount
+    	Disable mounting the current working directory into the image
+  -noRoot
+    	Use current user instead of the root user
+  -noTty
+    	Disable the --tty flag (needed for CI systems)
+  -path value
+    	Paths that will be mounted from the users home directory into lope. Path will be ignored if it isn't accessible. Can be specified multiple times
+  -ssh
+    	Enable forwarding ssh agent into the container
+  -whitelist string
+    	Comma seperated list of environment variables that will be be included by lope
+  -workDir string
+    	The default working directory for the docker image (default "/lope")
+```
 
 ## Examples
 
