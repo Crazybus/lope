@@ -16,11 +16,14 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	cmd = exec.Command("go", "build", "-o", "lope", "cmdProxy.go")
-	os.Setenv("GOOS", "linux")
-	os.Setenv("GOARCH", "amd64")
+	cmd = exec.Command("go", "build", "-o", "cmdProxy/lope", "cmdProxy/cmdProxy.go")
+	cmd.Env = os.Environ()
+	cmd.Env = append(
+		cmd.Env,
+		"GOOS=linux",
+		"GOARCH=amd64",
+	)
 
-	cmd.Dir = "cmdProxy"
 	err = cmd.Run()
 	if err != nil {
 		panic(err)
