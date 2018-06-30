@@ -6,7 +6,6 @@ services:
   - docker
 
 script:
-  - go build
   - go test -v -race -coverprofile=coverage.txt -covermode=atomic
   - ./lope -blacklist GO golang:1.10 /usr/local/go/bin/go run build/build.go
 

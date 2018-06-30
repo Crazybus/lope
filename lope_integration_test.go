@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -8,6 +9,23 @@ import (
 )
 
 var binaryName = filepath.FromSlash("./lope")
+
+func init() {
+	cmd := exec.Command("go", "build")
+	err := cmd.Run()
+	if err != nil {
+		panic(err)
+	}
+	cmd = exec.Command("go", "build", "-o", "lope", "cmdProxy.go")
+	os.Setenv("GOOS", "linux")
+	os.Setenv("GOARCH", "amd64")
+
+	cmd.Dir = "cmdProxy"
+	err = cmd.Run()
+	if err != nil {
+		panic(err)
+	}
+}
 
 func TestLopeCli(t *testing.T) {
 
@@ -50,7 +68,7 @@ func TestLopeCli(t *testing.T) {
 			},
 		},
 		{
-			"Run a command via the command proxy",
+			"Run a command via the command proxy api",
 			[]string{
 				"-noTty",
 				"-cmdProxy",
@@ -58,7 +76,19 @@ func TestLopeCli(t *testing.T) {
 				"wget", "-q", "-O-",
 				`--post-data='{"command":"lope", "args": ["-noTty", "alpine", "ls"]}'`,
 				"--header=Content-Type:application/json",
-				"http://$LOPE_PROXY_ADDR",
+				"$LOPE_PROXY_ADDR",
+			},
+			[]string{
+				"README.md",
+			},
+		},
+		{
+			"Run a command via the command proxy cli",
+			[]string{
+				"-noTty",
+				"-cmdProxy",
+				"alpine",
+				"cmdProxy/lope", "-noTty", "alpine", "ls",
 			},
 			[]string{
 				"README.md",

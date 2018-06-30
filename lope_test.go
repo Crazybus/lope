@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -530,18 +531,18 @@ func TestCommandProxy(t *testing.T) {
 			l.commandProxy()
 
 			got := ""
+			want := test.want
 			for _, e := range l.envs {
 				split := strings.Split(e, "=")
 				if split[0] == "LOPE_PROXY_ADDR" {
-					addr := split[1]
-					p := strings.Split(addr, ":")
-					if len(p) == 2 {
-						got = p[1]
+					addr, err := url.Parse(split[1])
+					if err != nil {
+						t.Errorf("got %q want %q", err, want)
 					}
+					got = addr.Port()
+
 				}
 			}
-			want := test.want
-
 			if got != want {
 				t.Errorf("got %q want %q", got, want)
 			}

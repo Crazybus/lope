@@ -389,7 +389,7 @@ func (l *lope) commandProxy() {
 
 	l.params = append(l.params, "--add-host=localhost:"+ip)
 
-	l.envs = append(l.envs, "LOPE_PROXY_ADDR="+ip+":"+l.cfg.cmdProxyPort)
+	l.envs = append(l.envs, "LOPE_PROXY_ADDR=http://"+ip+":"+l.cfg.cmdProxyPort)
 }
 
 func debug(message string) {
