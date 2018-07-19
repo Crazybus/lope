@@ -16,7 +16,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	cmd = exec.Command("go", "build", "-o", "cmdProxy/lope", "cmdProxy/cmdProxy.go")
+	cmd = exec.Command("go", "build", "-o", "lope", "cmdProxy.go")
 	cmd.Env = os.Environ()
 	cmd.Env = append(
 		cmd.Env,
@@ -24,8 +24,12 @@ func init() {
 		"GOARCH=amd64",
 	)
 
+	cmd.Dir = "cmdProxy"
 	err = cmd.Run()
 	if err != nil {
+		panic(err)
+	}
+	if err := os.Chmod(filepath.FromSlash("cmdProxy/lope"), 0755); err != nil {
 		panic(err)
 	}
 }
