@@ -22,6 +22,7 @@ func init() {
 		cmd.Env,
 		"GOOS=linux",
 		"GOARCH=amd64",
+		"CGO_ENABLED=0",
 	)
 
 	cmd.Dir = "cmdProxy"
