@@ -389,7 +389,7 @@ func (l *lope) commandProxy() {
 
 	l.params = append(l.params, "--add-host=localhost:"+ip)
 
-	l.envs = append(l.envs, "LOPE_PROXY_ADDR="+ip+":"+l.cfg.cmdProxyPort)
+	l.envs = append(l.envs, "LOPE_PROXY_ADDR=http://"+ip+":"+l.cfg.cmdProxyPort)
 }
 
 func debug(message string) {
@@ -433,7 +433,7 @@ func main() {
 	pwd, _ := os.Getwd()
 
 	var blacklist string
-	flag.StringVar(&blacklist, "blacklist", "HOME,SSH_AUTH_SOCK,TMPDIR", "Comma seperated list of environment variables that will be ignored by lope")
+	flag.StringVar(&blacklist, "blacklist", "HOME,SSH_AUTH_SOCK,TMPDIR,PATH", "Comma seperated list of environment variables that will be ignored by lope")
 
 	var whitelist string
 	flag.StringVar(&whitelist, "whitelist", "", "Comma seperated list of environment variables that will be be included by lope")

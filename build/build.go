@@ -55,6 +55,7 @@ func checksum(goos string, goarch string) error {
 func build(goos string, goarch string) error {
 	os.Setenv("GOOS", goos)
 	os.Setenv("GOARCH", goarch)
+    os.Setenv("CGO_ENABLED", "0")
 
 	cmd := exec.Command(
 		"/usr/local/go/bin/go",
