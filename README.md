@@ -180,6 +180,19 @@ lope-host | SUCCESS | rc=0 >>
 debian-9
 ```
 
+## Installation
+
+Point your browser to the releases page: [Latest Release](https://github.com/Crazybus/lope/releases/latest) and download the precompiled binary for your system.
+
+### Compile it yourself
+If you feel the need to compile it yourself, you will need [golang](https://golang.org/) installed.
+Run something like this:
+```
+go get github.com/Crazybus/lope
+go build github.com/Crazybus/lope
+cp $GOPATH/github.com/Crazybus/lope/lope /usr/local/bin
+```
+
 ## Features
 
 ### Planned
