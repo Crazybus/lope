@@ -211,7 +211,7 @@ func (l *lope) addEnvVars() {
 			}
 		}
 		if add && !blacklisted {
-			l.params = append(l.params, "-e", e)
+			l.params = append(l.params, "-e", name)
 		}
 	}
 	if l.cfg.ssh {
@@ -389,7 +389,7 @@ func (l *lope) commandProxy() {
 
 	l.params = append(l.params, "--add-host=localhost:"+ip)
 
-	l.envs = append(l.envs, "LOPE_PROXY_ADDR=http://"+ip+":"+l.cfg.cmdProxyPort)
+	l.params = append(l.params, "-e", "LOPE_PROXY_ADDR=http://"+ip+":"+l.cfg.cmdProxyPort)
 }
 
 func debug(message string) {

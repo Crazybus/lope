@@ -195,7 +195,7 @@ func TestAddEnvVars(t *testing.T) {
 			[]string{},
 			[]string{},
 			false,
-			"-e ENV1=hello1",
+			"-e ENV1",
 		},
 		{
 			"Add multiple env vars",
@@ -203,7 +203,7 @@ func TestAddEnvVars(t *testing.T) {
 			[]string{},
 			[]string{},
 			false,
-			"-e ENV1=hello1 -e ENV2=hello2",
+			"-e ENV1 -e ENV2",
 		},
 		{
 			"Blacklist an env var",
@@ -219,7 +219,7 @@ func TestAddEnvVars(t *testing.T) {
 			[]string{},
 			[]string{"ENV"},
 			false,
-			"-e ENV1=hello1 -e ENV2=hello2",
+			"-e ENV1 -e ENV2",
 		},
 		{
 			"Blacklist and whitelisting env vars",
@@ -227,7 +227,7 @@ func TestAddEnvVars(t *testing.T) {
 			[]string{"ENV1"},
 			[]string{"ENV"},
 			false,
-			"-e ENV2=hello2",
+			"-e ENV2",
 		},
 		{
 			"Add the SSH auth socket if ssh is enabled",
@@ -532,7 +532,7 @@ func TestCommandProxy(t *testing.T) {
 
 			got := ""
 			want := test.want
-			for _, e := range l.envs {
+			for _, e := range l.params {
 				split := strings.Split(e, "=")
 				if split[0] == "LOPE_PROXY_ADDR" {
 					addr, err := url.Parse(split[1])
