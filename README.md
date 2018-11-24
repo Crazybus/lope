@@ -197,7 +197,6 @@ cp $GOPATH/github.com/Crazybus/lope/lope /usr/local/bin
 
 ### Planned
 
-* Add option to specify custom docker flags
 * Get vagrant/virtualbox combo working
 * Make sure all images/names are unique so multiple lopes can be run at the same time
 * If using addMount add all .dot directories instead of mounting them
@@ -225,3 +224,4 @@ cp $GOPATH/github.com/Crazybus/lope/lope /usr/local/bin
 * Mount the docker socket into the container
 * Automated ssh agent forwarding for OSX. https://github.com/uber-common/docker-ssh-agent-forward
 * Run as current user and group when bind mounting
+* Add option to specify custom docker flags

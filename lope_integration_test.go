@@ -102,6 +102,19 @@ func TestLopeCli(t *testing.T) {
 				"README.md",
 			},
 		},
+		{
+			"Run a command with an extra docker arg",
+			[]string{
+				"-noTty",
+				"-arg",
+				"--hostname=crazybus",
+				"alpine",
+				"hostname",
+			},
+			[]string{
+				"crazybus",
+			},
+		},
 	}
 
 	for _, test := range tests {
