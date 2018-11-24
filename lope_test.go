@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/url"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -40,20 +41,30 @@ func TestRunParams(t *testing.T) {
 	var tests = []struct {
 		description string
 		cmd         []string
+		extra       []string
 		image       string
-		want        string
+		want        []string
 	}{
 		{
 			"Run command with image and cmd",
 			[]string{"command"},
+			[]string{},
 			"imageName",
-			"imageName -c command",
+			[]string{"imageName", "-c", "command"},
 		},
 		{
 			"Run command with image and multiple cmd args",
 			[]string{"command", "-arg"},
+			[]string{},
 			"imageName",
-			"imageName -c command -arg",
+			[]string{"imageName", "-c", "command -arg"},
+		},
+		{
+			"Run command with an extra arg",
+			[]string{"command", "-arg"},
+			[]string{"--ulimit 10"},
+			"imageName",
+			[]string{"--ulimit", "10", "imageName", "-c", "command -arg"},
 		},
 	}
 
@@ -62,12 +73,13 @@ func TestRunParams(t *testing.T) {
 			l.params = make([]string, 0)
 			l.cfg.cmd = test.cmd
 			l.cfg.image = test.image
+			extraArgs = test.extra
 			l.runParams()
 
-			got := strings.Join(l.params, " ")
+			got := l.params
 			want := test.want
 
-			if got != want {
+			if !reflect.DeepEqual(got, want) {
 				t.Errorf("got %q want %q", got, want)
 			}
 		})

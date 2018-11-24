@@ -287,6 +287,13 @@ func (l *lope) addUserAndGroup() {
 }
 
 func (l *lope) runParams() {
+
+	for _, a := range extraArgs {
+		for _, s := range strings.Split(a, " ") {
+			l.params = append(l.params, s)
+		}
+	}
+
 	l.params = append(l.params, l.cfg.image, "-c", strings.Join(l.cfg.cmd, " "))
 }
 
@@ -424,6 +431,7 @@ func (i *flagArray) Set(value string) error {
 
 var instructions flagArray
 var mountPaths flagArray
+var extraArgs flagArray
 
 func main() {
 
@@ -445,6 +453,8 @@ func main() {
 	flag.Var(&instructions, "instruction", "Extra docker image instructions to run when building the image. Can be specified multiple times")
 
 	flag.Var(&mountPaths, "path", "Paths that will be mounted from the users home directory into lope. Path will be ignored if it isn't accessible. Can be specified multiple times")
+
+	flag.Var(&extraArgs, "arg", "Extra docker run arguments which will be appended to the docker run command. Can be specified multiple times")
 
 	noMount := flag.Bool("noMount", false, "Disable mounting the current working directory into the image")
 
