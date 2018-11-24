@@ -44,8 +44,10 @@ Options:
     	Uses wget to download the docker client binary into the image
   -addMount
     	Setting this will add the directory into the image instead of mounting it
+  -arg value
+    	Extra docker run arguments which will be appended to the docker run command. Can be specified multiple times
   -blacklist string
-    	Comma seperated list of environment variables that will be ignored by lope (default "HOME,SSH_AUTH_SOCK,TMPDIR")
+    	Comma seperated list of environment variables that will be ignored by lope (default "HOME,SSH_AUTH_SOCK,TMPDIR,PATH")
   -cmdProxy
     	Starts a server that the lope container can use to run commands on the host
   -cmdProxyPort string
